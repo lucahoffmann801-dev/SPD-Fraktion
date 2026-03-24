@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – SPD Fraktion KL{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div class="page-icon"><i class="bi bi-speedometer2"></i></div>
+    <div>
+        <h2>Dashboard</h2>
+        <small class="text-muted">Übersicht · SPD Fraktion Kaiserslautern</small>
+    </div>
+</div>
+
+<!-- Stat-Karten -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="stat-icon" style="background: rgba(227,0,15,0.1); color: var(--spd-rot);">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ anzahl_bevorstehend }}</div>
+                    <div class="stat-label">bevorstehende Termine</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="stat-icon" style="background: rgba(255,140,0,0.1); color: #e07800;">
+                    <i class="bi bi-check2-square"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ offene_aufgaben }}</div>
+                    <div class="stat-label">offene Aufgaben</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="stat-icon" style="background: rgba(13,110,253,0.1); color: #0d6efd;">
+                    <i class="bi bi-envelope-check"></i>
+                </div>
+                <div>
+                    <div class="stat-value" style="font-size: 0.85rem; font-weight: 700;">
+                        {% if letzte_scan %}
+                            {{ letzte_scan.verarbeitet_am.strftime('%d.%m.%Y') }}
+                        {% else %}
+                            –
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">letzter E-Mail Scan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="stat-icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ anzahl_mitglieder }}</div>
+                    <div class="stat-label">Fraktionsmitglieder</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hauptbereich -->
+<div class="row g-4">
+
+    <!-- Nächste Termine -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-calendar-event me-2"></i>Nächste Termine</h5>
+                <a href="/termine" class="btn btn-sm btn-light fw-600 text-danger" style="font-size:0.8rem;">Alle anzeigen →</a>
+            </div>
+            <div class="card-body p-0">
+                {% if naechste_termine %}
+                <ul class="list-group list-group-flush">
+                    {% for termin in naechste_termine %}
+                    <li class="list-group-item px-4 py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold" style="font-size:0.95rem;">{{ termin.titel }}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar2 me-1"></i>{{ termin.datum }}
+                                    {% if termin.uhrzeit %}<span class="ms-2"><i class="bi bi-clock me-1"></i>{{ termin.uhrzeit }} Uhr</span>{% endif %}
+                                    {% if termin.ort %}<span class="ms-2"><i class="bi bi-geo-alt me-1"></i>{{ termin.ort }}</span>{% endif %}
+                                </small>
+                            </div>
+                            <span class="badge rounded-pill {% if termin.quelle == 'email' %}badge-email{% else %}badge-manuell{% endif %} text-white ms-2">
+                                {% if termin.quelle == 'email' %}<i class="bi bi-envelope"></i>{% else %}<i class="bi bi-pencil"></i>{% endif %}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-calendar-x fs-1 d-block mb-3" style="color: var(--spd-rot); opacity:0.4;"></i>
+                    <p class="mb-0">Noch keine Termine vorhanden.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Rechte Spalte -->
+    <div class="col-lg-4 d-flex flex-column gap-4">
+
+        <!-- Schnellzugriff -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-lightning-fill me-2"></i>Schnellzugriff</h5>
+            </div>
+            <div class="card-body d-flex flex-column gap-2 p-3">
+                <a href="/termine" class="btn btn-outline-danger text-start d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-plus"></i> Termin hinzufügen
+                </a>
+                <a href="/kalender.ics" class="btn btn-outline-secondary text-start d-flex align-items-center gap-2" title="Kalender in Apple/Google/Outlook importieren">
+                    <i class="bi bi-calendar-check"></i> Kalender abonnieren (.ics)
+                </a>
+                <a href="/aufgaben" class="btn btn-outline-danger text-start d-flex align-items-center gap-2">
+                    <i class="bi bi-plus-circle"></i> Neue Aufgabe
+                </a>
+                <a href="/dokumente" class="btn btn-outline-danger text-start d-flex align-items-center gap-2">
+                    <i class="bi bi-upload"></i> Dokument hochladen
+                </a>
+                <a href="/mitglieder" class="btn btn-outline-danger text-start d-flex align-items-center gap-2">
+                    <i class="bi bi-people"></i> Mitglieder anzeigen
+                </a>
+            </div>
+        </div>
+
+        <!-- E-Mail Scan Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-envelope-arrow-down me-2"></i>E-Mail Scan</h5>
+            </div>
+            <div class="card-body p-3">
+                <p class="text-muted small mb-2">
+                    Automatischer Scan: <strong>Mo–Fr, 17:00 Uhr</strong>
+                </p>
+                {% if letzte_scan %}
+                <p class="text-muted small mb-0">
+                    Zuletzt: {{ letzte_scan.verarbeitet_am.strftime('%d.%m.%Y um %H:%M') }} Uhr
+                </p>
+                {% else %}
+                <p class="text-muted small mb-0">Noch kein Scan durchgeführt.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+.stat-card { border-radius: 12px !important; transition: box-shadow 0.15s; }
+.stat-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important; }
+.stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.stat-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #1a1a1a;
+}
+.stat-label {
+    font-size: 0.75rem;
+    color: #888;
+    font-weight: 500;
+    margin-top: 2px;
+}
+</style>
+{% endblock %}
