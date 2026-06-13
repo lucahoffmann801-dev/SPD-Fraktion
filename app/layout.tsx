@@ -12,6 +12,7 @@ import "./visual-tuning.css";
 import "./progress-slider.css";
 import "./task-assignment.css";
 import "./interface-polish.css";
+import "./sprint0-layout-fixes.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
