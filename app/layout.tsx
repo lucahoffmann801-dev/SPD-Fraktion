@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import MobileStatusBridge from "./MobileStatusBridge";
 import "./globals.css";
 import "./termine-filter.css";
 import "./menu-icons.css";
@@ -29,7 +30,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>
+        <MobileStatusBridge />
+        {children}
+      </body>
     </html>
   );
 }
