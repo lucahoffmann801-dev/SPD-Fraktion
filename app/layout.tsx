@@ -4,6 +4,7 @@ import "./termine-filter.css";
 import "./menu-icons.css";
 import "./work-orders.css";
 import "./luca-assets.css";
+import "./mobile-monday.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
