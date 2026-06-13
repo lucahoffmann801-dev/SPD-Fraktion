@@ -1,0 +1,115 @@
+/* Final interaction polish layer. Keep this loaded last. */
+.monday-task small,
+.item .small,
+.item .muted,
+.profile-card p,
+.document-description {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.monday-task small {
+  display: block;
+}
+.monday-task small::first-letter {
+  text-transform: none;
+}
+
+.monday-row {
+  transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+.monday-row:active {
+  transform: scale(.997);
+}
+.monday-row[data-save-state="saving"] {
+  border-color: rgba(245, 158, 11, .32) !important;
+}
+.monday-row[data-save-state="saved"] {
+  border-color: rgba(34, 197, 94, .28) !important;
+}
+.monday-row[data-save-state="error"] {
+  border-color: rgba(227, 0, 15, .34) !important;
+}
+
+.status-cell {
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.16);
+}
+.status-cell:focus-visible,
+.progress-range:focus-visible,
+.assign-person:focus-visible,
+.assign-all:focus-visible,
+.native-status-option:focus-visible,
+.native-status-cancel:focus-visible {
+  outline: 3px solid rgba(0, 115, 234, .28);
+  outline-offset: 2px;
+}
+
+.native-status-sheet {
+  padding-top: 16px;
+}
+.native-status-option {
+  justify-content: flex-start;
+}
+.native-status-option::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.assignment-panel {
+  margin-bottom: 4px;
+}
+.assign-person {
+  transition: background .12s ease, border-color .12s ease, transform .08s ease;
+}
+.assign-person:active {
+  transform: scale(.98);
+}
+.assign-person.selected::after {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.visibility-panel label:has(input:checked) {
+  border-color: rgba(227, 0, 15, .45);
+  background: rgba(227, 0, 15, .07);
+  color: var(--red);
+}
+
+@media (max-width: 860px) {
+  .monday-row,
+  .profile-card,
+  .item,
+  .panel {
+    box-shadow: none !important;
+  }
+  .monday-task small {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .status-cell {
+    min-height: 46px;
+    border-radius: 12px;
+  }
+  .progress-value {
+    min-width: 48px;
+    font-size: 14px;
+  }
+  .save-indicator {
+    font-size: 12px;
+    padding-right: 2px !important;
+  }
+  .native-status-sheet {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
