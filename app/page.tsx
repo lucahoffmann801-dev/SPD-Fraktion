@@ -6,7 +6,9 @@ import type { CalendarSource, CommitteeMembership, FraktionCase, FraktionCommitt
 
 type View = "dashboard" | "termine" | "aufgaben" | "vorgaenge" | "ausschuesse" | "profile" | "mitglieder" | "dokumente" | "sync";
 
-const nav: Array<{ id: View; icon: string; label: string }> = [
+type NavItem = { id: View; icon: string; label: string };
+
+const nav: NavItem[] = [
   { id: "dashboard", icon: "Ü", label: "Heute" },
   { id: "termine", icon: "T", label: "Termine" },
   { id: "aufgaben", icon: "A", label: "Aufgaben" },
@@ -41,6 +43,14 @@ const profileImageBySlug: Record<string, string> = {
 };
 
 const avatarImgStyle = { width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit", display: "block" } as const;
+const prepLabel: Record<string, string> = {
+  offen: "offen",
+  unterlagen_fehlen: "Unterlagen fehlen",
+  vorbereiten: "vorbereiten",
+  rueckfrage: "Rückfrage",
+  vorbereitet: "vorbereitet",
+  erledigt: "erledigt"
+};
 
 function slugifyName(input: string) {
   return input.toLowerCase().replace(/ß/g, "ss").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -87,6 +97,9 @@ export default function Home() {
   const [message, setMessage] = useState<string | null>(null);
   const [currentProfile, setCurrentProfile] = useState<FraktionProfile | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [eventQuery, setEventQuery] = useState("");
+  const [eventCategory, setEventCategory] = useState("alle");
+  const [eventPrep, setEventPrep] = useState("alle");
 
   async function load() {
     setLoading(true);
@@ -120,27 +133,29 @@ export default function Home() {
   const openTasks = useMemo(() => tasks.filter(t => t.status !== "erledigt" && t.status !== "verworfen"), [tasks]);
   const myTasks = useMemo(() => openTasks.filter(t => !currentProfile || !t.assignee || t.assignee.includes(currentProfile.display_name) || t.assignee.includes(currentProfile.full_name)), [openTasks, currentProfile]);
   const activeCases = useMemo(() => cases.filter(c => c.status !== "erledigt" && c.status !== "archiv"), [cases]);
+  const eventCategories = useMemo(() => Array.from(new Set(events.map(e => e.category || "Termin"))).sort(), [events]);
+  const filteredEvents = useMemo(() => {
+    const q = eventQuery.trim().toLowerCase();
+    return events.filter(event => {
+      const status = event.preparation_status || "offen";
+      const category = event.category || "Termin";
+      const haystack = `${event.title} ${event.meeting_body || ""} ${event.location || ""}`.toLowerCase();
+      return (eventCategory === "alle" || category === eventCategory)
+        && (eventPrep === "alle" || status === eventPrep)
+        && (!q || haystack.includes(q));
+    });
+  }, [events, eventCategory, eventPrep, eventQuery]);
 
-  function activateView(nextView: View) {
-    setView(nextView);
-    setMoreOpen(false);
-  }
+  function activateView(nextView: View) { setView(nextView); setMoreOpen(false); }
   async function handleLogin(profileSlug: string, code: string) {
     const response = await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profileSlug, code }) });
     const json = await response.json();
-    if (!response.ok) {
-      setMessage(json.error || "Login fehlgeschlagen.");
-      return;
-    }
+    if (!response.ok) { setMessage(json.error || "Login fehlgeschlagen."); return; }
     setCurrentProfile(json.profile);
     window.localStorage.setItem("fraktion-profile-slug", json.profile.slug);
     setMessage("Profil aktiv.");
   }
-  function logout() {
-    window.localStorage.removeItem("fraktion-profile-slug");
-    setCurrentProfile(null);
-    setMoreOpen(false);
-  }
+  function logout() { window.localStorage.removeItem("fraktion-profile-slug"); setCurrentProfile(null); setMoreOpen(false); }
   async function handleEventSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -183,12 +198,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <Brand />
-        <div className="compact-profile"><Avatar profile={currentProfile} /><div><strong>{currentProfile.full_name}</strong><span>{currentProfile.role}</span></div></div>
-        <nav className="nav" aria-label="Hauptnavigation">{nav.map(item => <NavButton key={item.id} item={item} view={view} onClick={() => activateView(item.id)} />)}</nav>
-        <button className="logout" onClick={logout}>Profil wechseln</button>
-      </aside>
+      <aside className="sidebar"><Brand /><div className="compact-profile"><Avatar profile={currentProfile} /><div><strong>{currentProfile.full_name}</strong><span>{currentProfile.role}</span></div></div><nav className="nav" aria-label="Hauptnavigation">{nav.map(item => <NavButton key={item.id} item={item} view={view} onClick={() => activateView(item.id)} />)}</nav><button className="logout" onClick={logout}>Profil wechseln</button></aside>
       <MobileTop profile={currentProfile} />
       {moreOpen && <MoreSheet view={view} onSelect={activateView} onClose={() => setMoreOpen(false)} onLogout={logout} />}
       <section className="main">
@@ -196,12 +206,8 @@ export default function Home() {
         {message && <div className="notice">{message}</div>}
         {isDevelopment && data.error && <div className="notice">{data.error}</div>}
 
-        <section className={classNames("section", view === "dashboard" && "active")}>
-          <div className="stats-row"><Stat label="Vorbereitung" value={prepEvents.length} hint="offen" /><Stat label="Vorgänge" value={activeCases.length} hint="aktiv" /><Stat label="Aufgaben" value={myTasks.length} hint="für dich" /></div>
-          <div className="content-grid"><Panel title="Vorbereitung" subtitle="Termine mit offenem Status"><EventList events={prepEvents.slice(0, 5)} onPrep={updateEventPrep} /></Panel><Panel title="Vorgänge" subtitle="Nächste Schritte"><CaseList cases={activeCases.slice(0, 6)} /></Panel></div>
-        </section>
-
-        <section className={classNames("section", view === "termine" && "active")}><div className="content-grid"><Panel title="Neuer Termin" subtitle="Gremium, Status und Ort"><EventForm onSubmit={handleEventSubmit} /></Panel><Panel title="Termine" subtitle="Alle anstehenden Sitzungen"><EventList events={events} onPrep={updateEventPrep} /></Panel></div></section>
+        <section className={classNames("section", view === "dashboard" && "active")}><div className="stats-row"><Stat label="Vorbereitung" value={prepEvents.length} hint="offen" /><Stat label="Vorgänge" value={activeCases.length} hint="aktiv" /><Stat label="Aufgaben" value={myTasks.length} hint="für dich" /></div><div className="content-grid"><Panel title="Vorbereitung" subtitle="Termine mit offenem Status"><EventList events={prepEvents.slice(0, 5)} onPrep={updateEventPrep} /></Panel><Panel title="Vorgänge" subtitle="Nächste Schritte"><CaseList cases={activeCases.slice(0, 6)} /></Panel></div></section>
+        <section className={classNames("section", view === "termine" && "active")}><div className="content-grid"><Panel title="Neuer Termin" subtitle="Gremium, Status und Ort"><EventForm onSubmit={handleEventSubmit} /></Panel><Panel title="Termine" subtitle={`${filteredEvents.length} von ${events.length} Terminen`}><EventFilters query={eventQuery} category={eventCategory} prep={eventPrep} categories={eventCategories} onQuery={setEventQuery} onCategory={setEventCategory} onPrep={setEventPrep} /><EventList events={filteredEvents} onPrep={updateEventPrep} /></Panel></div></section>
         <section className={classNames("section", view === "aufgaben" && "active")}><div className="content-grid"><Panel title="Neue Aufgabe" subtitle="Zuständigkeit und Frist"><TaskForm profile={currentProfile} cases={cases} onSubmit={handleTaskSubmit} /></Panel><Panel title="Aufgaben" subtitle="Offene Arbeitsstände"><TaskList tasks={tasks} onStatus={updateTaskStatus} /></Panel></div></section>
         <section className={classNames("section", view === "vorgaenge" && "active")}><div className="content-grid"><Panel title="Neuer Vorgang" subtitle="Themenakte anlegen"><CaseForm profile={currentProfile} onSubmit={handleCaseSubmit} /></Panel><Panel title="Vorgänge" subtitle="Status und nächster Schritt"><CaseList cases={cases} /></Panel></div></section>
         <section className={classNames("section", view === "ausschuesse" && "active")}><SectionTitle title="Ausschüsse" subtitle="Mitglieder und Vertretungen" /><CommitteeList committees={committees} memberships={memberships} /></section>
@@ -216,7 +222,7 @@ export default function Home() {
 }
 
 function Brand() { return <div className="brand"><img src="/FraktionslogoNeu.svg" alt="SPD-Fraktion Kaiserslautern" /></div>; }
-function NavButton({ item, view, onClick }: { item: { id: View; icon: string; label: string }; view: View; onClick: () => void }) { return <button className={view === item.id ? "active" : ""} onClick={onClick}><span>{item.icon}</span>{item.label}</button>; }
+function NavButton({ item, view, onClick }: { item: NavItem; view: View; onClick: () => void }) { return <button className={view === item.id ? "active" : ""} onClick={onClick}><span>{item.icon}</span>{item.label}</button>; }
 function MobileTop({ profile }: { profile: FraktionProfile }) { return <header className="mobile-top"><Brand /><div className="mobile-profile"><Avatar profile={profile} /><span>{profile.display_name}</span></div></header>; }
 function BottomNav({ view, onSelect, onMore }: { view: View; onSelect: (view: View) => void; onMore: () => void }) { return <nav className="tabbar" aria-label="Mobile Navigation">{bottomNav.map(id => { const item = nav.find(n => n.id === id)!; return <button key={id} className={view === id ? "active" : ""} onClick={() => onSelect(id)}><span>{item.icon}</span>{item.label}</button>; })}<button onClick={onMore}><span>•••</span>Mehr</button></nav>; }
 function MoreSheet({ view, onSelect, onClose, onLogout }: { view: View; onSelect: (view: View) => void; onClose: () => void; onLogout: () => void }) { return <div className="sheet-wrap"><button className="sheet-scrim" onClick={onClose} aria-label="Schließen" /><div className="sheet"><strong>Mehr</strong>{nav.filter(n => !bottomNav.includes(n.id)).map(item => <NavButton key={item.id} item={item} view={view} onClick={() => onSelect(item.id)} />)}<button className="logout sheet-logout" onClick={onLogout}>Profil wechseln</button></div></div>; }
@@ -224,7 +230,8 @@ function LoginScreen({ profiles, message, onLogin }: { profiles: FraktionProfile
 function Avatar({ profile, large = false }: { profile: FraktionProfile; large?: boolean }) { const image = profileImageBySlug[profile.slug]; return <div className={classNames("avatar", large && "large", profile.accent ?? "")}>{image ? <img src={image} alt={profile.full_name} style={avatarImgStyle} /> : profile.avatar_initials}</div>; }
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) { return <div className="section-title"><div><h2>{title}</h2><p>{subtitle}</p></div></div>; }
 function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) { return <div className="panel"><SectionTitle title={title} subtitle={subtitle} />{children}</div>; }
-function EventForm({ onSubmit }: { onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> }) { return <form className="form-grid" onSubmit={onSubmit}><input className="input wide" name="title" placeholder="Titel" required /><input className="input" name="date" type="date" required /><input className="input" name="time" type="time" defaultValue="15:00" /><select className="select" name="category">{categories.map(c => <option key={c}>{c}</option>)}</select><select className="select" name="relevance"><option value="offen">Relevanz offen</option><option value="beide">für beide</option><option value="patrick">Patrick</option><option value="luca">Luca</option><option value="nicht_relevant">nicht relevant</option></select><input className="input wide" name="meeting_body" placeholder="Gremium" /><select className="select wide" name="preparation_status">{prepStatus.map(s => <option key={s} value={s}>{s.replaceAll("_", " ")}</option>)}</select><input className="input wide" name="location" placeholder="Ort" /><textarea className="textarea wide" name="description" placeholder="Notiz" /><button className="btn red wide">Speichern</button></form>; }
+function EventFilters({ query, category, prep, categories: eventCategories, onQuery, onCategory, onPrep }: { query: string; category: string; prep: string; categories: string[]; onQuery: (value: string) => void; onCategory: (value: string) => void; onPrep: (value: string) => void }) { return <div className="event-filters"><input className="input" value={query} onChange={event => onQuery(event.target.value)} placeholder="Suchen" /><select className="select" value={category} onChange={event => onCategory(event.target.value)}><option value="alle">Alle Gremien</option>{eventCategories.map(item => <option key={item} value={item}>{item}</option>)}</select><select className="select" value={prep} onChange={event => onPrep(event.target.value)}><option value="alle">Alle Stati</option>{prepStatus.map(item => <option key={item} value={item}>{prepLabel[item]}</option>)}</select></div>; }
+function EventForm({ onSubmit }: { onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> }) { return <form className="form-grid" onSubmit={onSubmit}><input className="input wide" name="title" placeholder="Titel" required /><input className="input" name="date" type="date" required /><input className="input" name="time" type="time" defaultValue="15:00" /><select className="select" name="category">{categories.map(c => <option key={c}>{c}</option>)}</select><select className="select" name="relevance"><option value="offen">Relevanz offen</option><option value="beide">für beide</option><option value="patrick">Patrick</option><option value="luca">Luca</option><option value="nicht_relevant">nicht relevant</option></select><input className="input wide" name="meeting_body" placeholder="Gremium" /><select className="select wide" name="preparation_status">{prepStatus.map(s => <option key={s} value={s}>{prepLabel[s]}</option>)}</select><input className="input wide" name="location" placeholder="Ort" /><textarea className="textarea wide" name="description" placeholder="Notiz" /><button className="btn red wide">Speichern</button></form>; }
 function TaskForm({ profile, cases, onSubmit }: { profile: FraktionProfile; cases: FraktionCase[]; onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> }) { return <form className="form-grid" onSubmit={onSubmit}><input className="input wide" name="title" placeholder="Aufgabe" required /><input className="input" name="assignee" placeholder="Zuständig" defaultValue={profile.full_name} /><input className="input" name="due_date" type="date" /><select className="select" name="priority">{priorities.map(p => <option key={p}>{p}</option>)}</select><select className="select" name="case_id"><option value="">kein Vorgang</option>{cases.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select><textarea className="textarea wide" name="description" placeholder="Beschreibung" /><button className="btn red wide">Speichern</button></form>; }
 function CaseForm({ profile, onSubmit }: { profile: FraktionProfile; onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> }) { return <form className="form-grid" onSubmit={onSubmit}><input className="input wide" name="title" placeholder="Titel" required /><input className="input" name="owner" placeholder="Zuständig" defaultValue={profile.full_name} /><select className="select" name="priority">{priorities.map(p => <option key={p}>{p}</option>)}</select><input className="input wide" name="next_step" placeholder="Nächster Schritt" /><textarea className="textarea wide" name="description" placeholder="Kurzbeschreibung" /><button className="btn red wide">Speichern</button></form>; }
 function SourceForm({ profile, onSubmit }: { profile: FraktionProfile; onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> }) { return <form className="form-grid" onSubmit={onSubmit}><input className="input" name="name" placeholder="Name" defaultValue="Kalender" required /><input className="input" name="owner" placeholder="Eigentümer" defaultValue={profile.full_name} /><input className="input wide" name="url" placeholder="https://...ics" required /><textarea className="textarea wide" name="notes" placeholder="Notiz" /><button className="btn red wide">Speichern</button><a className="btn light wide" href="/api/calendar/ics">Fraktionskalender abonnieren</a></form>; }
@@ -232,7 +239,7 @@ function CaseList({ cases }: { cases: FraktionCase[] }) { if (!cases.length) ret
 function CommitteeList({ committees, memberships }: { committees: FraktionCommittee[]; memberships: CommitteeMembership[] }) { if (!committees.length) return <p className="muted">Noch keine Ausschüsse.</p>; return <div className="profile-grid">{committees.map(c => { const rows = memberships.filter(m => m.committee_slug === c.slug); return <div className="profile-card" key={c.slug}><div className="item-head"><h3>{c.title}</h3><Badge tone="red">{c.short_ref}</Badge></div><strong>Ordentlich</strong>{rows.filter(r => r.role === "member").map(r => <div className="small" key={r.id}>• {r.person_name}</div>)}<strong>Stellvertretend</strong>{rows.filter(r => r.role === "substitute").map(r => <div className="small" key={r.id}>• {r.person_name}</div>)}</div>; })}</div>; }
 function committeeLabels(name: string, memberships: CommitteeMembership[], committees: FraktionCommittee[]) { return memberships.filter(m => m.person_name === name).map(m => `${committees.find(c => c.slug === m.committee_slug)?.short_ref ?? m.committee_slug} ${m.role === "substitute" ? "stv." : "ord."}`); }
 function ProfileCard({ profile, active, memberships, committees }: { profile: FraktionProfile; active?: boolean; memberships: CommitteeMembership[]; committees: FraktionCommittee[] }) { const labels = committeeLabels(profile.full_name, memberships, committees); return <div className={classNames("profile-card", active && "is-active")}><div className="profile-top"><Avatar profile={profile} large /><div><h3>{profile.full_name}</h3><p>{profile.role}</p></div></div><div className="badges"><Badge tone={profile.is_staff ? "gold" : "red"}>{profile.is_staff ? "Sekretariat" : "Ratsmitglied"}</Badge>{profile.board_role && <Badge tone="blue">{profile.board_role}</Badge>}</div><div className="permission-row">{labels.length ? labels.map(label => <span key={label}>{label}</span>) : (profile.permissions ?? []).slice(0, 4).map(permission => <span key={permission}>{permission}</span>)}</div></div>; }
-function EventList({ events, onPrep }: { events: FraktionEvent[]; onPrep?: (event: FraktionEvent, status: string) => Promise<void> }) { if (!events.length) return <p className="muted">Noch keine Termine.</p>; return <div className="list">{events.map(e => <div className="item" key={e.id}><div className="item-head"><h3>{e.title}</h3><div className="badges"><Badge tone="red">{e.category ?? "Termin"}</Badge></div></div><div className="muted small">{dateTime(e.starts_at)}{e.location ? ` · ${e.location}` : ""}</div><div className="small">{e.meeting_body || e.title} · {e.preparation_status || "offen"}</div>{readable(e.description) && <div className="small">{readable(e.description)}</div>}{onPrep && <div className="toolbar">{prepStatus.map(s => <button className={(e.preparation_status ?? "offen") === s ? "btn red" : "btn light"} key={s} onClick={() => onPrep(e, s)}>{s.replaceAll("_", " ")}</button>)}</div>}</div>)}</div>; }
+function EventList({ events, onPrep }: { events: FraktionEvent[]; onPrep?: (event: FraktionEvent, status: string) => Promise<void> }) { if (!events.length) return <p className="muted">Keine passenden Termine.</p>; return <div className="list">{events.map(e => { const current = e.preparation_status || "offen"; return <div className="item" key={e.id}><div className="item-head"><h3>{e.title}</h3><div className="badges"><Badge tone="red">{e.category ?? "Termin"}</Badge><Badge tone={current === "erledigt" || current === "vorbereitet" ? "green" : "blue"}>{prepLabel[current] ?? current}</Badge></div></div><div className="muted small">{dateTime(e.starts_at)}{e.location ? ` · ${e.location}` : ""}</div><div className="small">{e.meeting_body || e.title}</div>{readable(e.description) && <div className="small">{readable(e.description)}</div>}{onPrep && <details className="event-actions"><summary>Status ändern</summary><div className="toolbar">{prepStatus.map(s => <button className={current === s ? "btn red" : "btn light"} key={s} onClick={() => onPrep(e, s)}>{prepLabel[s]}</button>)}</div></details>}</div>; })}</div>; }
 function TaskList({ tasks, onStatus }: { tasks: FraktionTask[]; onStatus: (task: FraktionTask, status: string) => Promise<void> }) { if (!tasks.length) return <p className="muted">Keine Aufgaben vorhanden.</p>; return <div className="list">{tasks.map(t => <div className="item" key={t.id}><div className="item-head"><h3>{t.title}</h3><Badge tone={t.priority === "hoch" || t.priority === "kritisch" ? "red" : ""}>{t.priority}</Badge></div><div className="muted small">{t.assignee || "nicht zugewiesen"} · {dateOnly(t.due_date)}</div>{readable(t.description) && <div className="small">{readable(t.description)}</div>}<div className="toolbar">{taskStatus.map(s => <button className={t.status === s ? "btn red" : "btn light"} key={s} onClick={() => onStatus(t, s)}>{s.replace("_", " ")}</button>)}</div></div>)}</div>; }
 function MemberCard({ member, memberships, committees }: { member: FraktionMember; memberships: CommitteeMembership[]; committees: FraktionCommittee[] }) { const initials = member.name.split(" ").map(part => part[0]).join("").slice(0, 2); const labels = committeeLabels(member.name, memberships, committees); const image = profileImageBySlug[slugifyName(member.name)]; return <div className="profile-card"><div className="profile-top"><div className="avatar">{image ? <img src={image} alt={member.name} style={avatarImgStyle} /> : initials}</div><div><h3>{member.name}</h3><p>{member.role ?? "Fraktionsmitglied"}</p></div></div><p className="muted small">{labels.length ? labels.join(" · ") : member.committees ?? "Ausschüsse ergänzen"}</p></div>; }
 function DocumentList({ documents, cases }: { documents: FraktionDocument[]; cases: FraktionCase[] }) { if (!documents.length) return <p className="muted">Noch keine Dokumente.</p>; return <div className="list">{documents.map(d => <div className="item" key={d.id}><div className="item-head"><h3>{d.title}</h3><Badge>{d.kind ?? d.category ?? "Dokument"}</Badge></div>{readable(d.description) && <div className="small">{readable(d.description)}</div>}<div className="muted small">{d.status ?? "offen"} · {cases.find(c => c.id === d.case_id)?.title ?? "ohne Vorgang"}</div>{d.url && <a className="btn light" href={d.url} target="_blank">Öffnen</a>}</div>)}</div>; }
