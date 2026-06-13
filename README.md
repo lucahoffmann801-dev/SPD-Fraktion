@@ -1,54 +1,58 @@
 # SPD-Fraktion KL Portal
 
-Massiver Vercel/Supabase-Neustart des alten FastAPI-Portals.
+Vercel/Supabase-Neustart des alten FastAPI-Portals als internes Fraktionscockpit.
 
-## Was neu ist
+## Neu in diesem Ausbau
 
 - Next.js App Router für Vercel
 - Supabase als Backend
-- Fraktionscockpit mit Dashboard
+- modernes Glass-Design
+- Portal-Branding mit Fraktionslogo
+- Profil-Login für alle 12 Ratsmitglieder und Luca Hoffmann als Fraktionssekretär
+- personalisiertes Dashboard
 - Terminverwaltung
 - Aufgaben-Board
+- Profile und Rollenrechte
 - Mitgliederübersicht
 - Dokumentenbereich
 - Kalenderquellen für Apple/ICS
 - iCal-Export unter `/api/ics`
 - Vercel Cron-Endpunkt unter `/api/cron/sync`
-- Fallback/Demo-Daten, falls Supabase noch nicht konfiguriert ist
 
-## Wichtige Sicherheitshinweise
+## Profile
+
+Die Profile werden in `public.profiles` gespeichert. Enthalten sind die 12 Ratsmitglieder der SPD-Fraktion Kaiserslautern sowie Luca Hoffmann als Fraktionssekretär / Organisation.
+
+## Login
+
+Der aktuelle Login ist ein Profil-Login für den internen Prototypen. Optional kann in Vercel gesetzt werden:
+
+```env
+PORTAL_SHARED_CODE=...
+```
+
+Wenn diese Variable gesetzt ist, muss beim Profil-Login zusätzlich dieser Zugangscode eingegeben werden. Für echte produktive Nutzung sollte danach Supabase Auth mit Magic Links oder einem rollenbasierten Login ergänzt werden.
+
+## Sicherheit
 
 - Kein normales Apple-ID-Passwort speichern.
 - Für Patrick zuerst einen freigegebenen Apple-Kalender als ICS-Link nutzen.
-- CalDAV kann später ergänzt werden, dann nur mit app-spezifischem Apple-Passwort.
-- Den Supabase-Key nicht in GitHub committen.
+- CalDAV später nur mit app-spezifischem Apple-Passwort ergänzen.
+- Supabase-Key nicht in GitHub committen.
 - Vercel Environment Variables verwenden.
-- Die RLS-Policies in `supabase/schema.sql` sind bewusst prototypisch offen und müssen vor echtem produktivem Einsatz auf Auth/Rollen umgestellt werden.
+- Die RLS-Policies in den Migrationen sind für den Prototypen offen und müssen vor echtem produktivem Einsatz auf Auth/Rollen umgestellt werden.
 
 ## Setup auf Vercel
-
-1. Vercel-Projekt mit diesem Repository verbinden.
-2. Environment Variables setzen:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://dwbkqpdspbpitzqbjryu.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+PORTAL_SHARED_CODE=...
 CRON_SECRET=...
 ```
 
-3. In Supabase im SQL Editor `supabase/schema.sql` ausführen.
-4. Deploy auf Vercel starten.
-5. `/api/data` prüfen.
-6. `/api/ics` als Kalender abonnieren.
+Supabase GitHub Integration ist auf `main` eingerichtet. Migrationen liegen unter `supabase/migrations` und werden bei Merge nach `main` angewendet.
 
-## Hinweis zur aktuellen Vercel-Verknüpfung
+## Hinweis
 
-Das aktuell über die Tools sichtbare Vercel-Projekt heißt `nextjs` und ist mit dem privaten Repo `lucahoffmann801-dev/nextjs` verbunden. Dieses Repo wirkt nach dem Stand der Deployments eher wie die Kreta-App. Deshalb wurde der SPD-Ausbau hier im Repo `lucahoffmann801-dev/SPD-Fraktion` als eigener Branch vorbereitet, damit nichts Bestehendes überschrieben wird.
-
-## Nächster Ausbau
-
-- ICS-Import vollständig aktivieren: Quellen aus `calendar_sources` abrufen, Events parsen und via `source_uid` upserten.
-- Auth ergänzen: Luca/Patrick Login mit Rollen.
-- Dokumente mit Supabase Storage verbinden.
-- E-Mail-Scanner aus dem alten Python-Projekt als Edge/Route-Logik neu bauen.
-- Änderungsverlauf und Benachrichtigungen einbauen.
+Das bestehende `nextjs`-/Kreta-Projekt und seine Domains werden nicht verändert. Dieser Ausbau liegt im Repo `lucahoffmann801-dev/SPD-Fraktion`.

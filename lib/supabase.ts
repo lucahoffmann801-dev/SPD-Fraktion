@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import type { CrudTable, PortalData } from "./types";
+import { demoData } from "./demo-data";
+import type { CrudTable, FraktionProfile, PortalData } from "./types";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -16,10 +17,11 @@ export function getSupabase() {
 export async function getPortalData(): Promise<PortalData> {
   const supabase = getSupabase();
   if (!supabase) {
-    return { events: [], tasks: [], members: [], documents: [], calendar_sources: [], sync_logs: [], supabaseConfigured: false };
+    return { ...demoData, supabaseConfigured: false };
   }
 
-  const [events, tasks, members, documents, calendarSources, syncLogs] = await Promise.all([
+  const [profiles, events, tasks, members, documents, calendarSources, syncLogs] = await Promise.all([
+    supabase.from("profiles").select("*").order("sort_order", { ascending: true }),
     supabase.from("events").select("*").order("starts_at", { ascending: true }),
     supabase.from("tasks").select("*").order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("members").select("*").order("name", { ascending: true }),
@@ -28,10 +30,11 @@ export async function getPortalData(): Promise<PortalData> {
     supabase.from("sync_logs").select("*").order("created_at", { ascending: false }).limit(20)
   ]);
 
-  const error = events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error;
+  const error = profiles.error || events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error;
   if (error) throw new Error(error.message);
 
   return {
+    profiles: (profiles.data ?? demoData.profiles) as FraktionProfile[],
     events: events.data ?? [],
     tasks: tasks.data ?? [],
     members: members.data ?? [],
@@ -40,6 +43,14 @@ export async function getPortalData(): Promise<PortalData> {
     sync_logs: syncLogs.data ?? [],
     supabaseConfigured: true
   } as PortalData;
+}
+
+export async function getProfiles(): Promise<FraktionProfile[]> {
+  const supabase = getSupabase();
+  if (!supabase) return demoData.profiles;
+  const { data, error } = await supabase.from("profiles").select("*").eq("login_enabled", true).order("sort_order", { ascending: true });
+  if (error) return demoData.profiles;
+  return (data ?? demoData.profiles) as FraktionProfile[];
 }
 
 export async function insertRecord<T>(table: CrudTable, payload: Record<string, unknown>): Promise<T[]> {
