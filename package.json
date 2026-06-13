@@ -2,6 +2,9 @@
   "name": "spd-fraktion-portal",
   "version": "2.0.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
-    "@types/node": "^20.19.0",
+    "@types/node": "^22.15.30",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "next": "^16.2.4",
