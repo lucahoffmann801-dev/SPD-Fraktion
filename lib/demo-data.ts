@@ -60,6 +60,7 @@ export const demoData: PortalData = {
     { id: "demo-2", title: "Bauausschuss", starts_at: "2026-06-21T15:00:00+02:00", ends_at: "2026-06-21T16:45:00+02:00", all_day: false, location: "Großer Ratssaal, Rathaus Kaiserslautern", description: "Beispieltermin aus RIS-Kalenderstruktur.", category: "Ausschuss", source: "demo", source_uid: "demo-2", owner: "Fraktion", relevance: "offen", status: "scheduled", meeting_body: "Bauausschuss", preparation_status: "offen", requires_preparation: true, decision_needed: false }
   ],
   tasks: [
+    { id: "task-patrick-luca-zukunftsforum-schulgebaeude", title: "Planung nächstes Zukunftsforum - Zukunft unserer Schulgebäude", description: "[Patrick→Luca] Probeauftrag von Patrick an Luca zur Planung des nächsten Zukunftsforums zum Thema Zukunft unserer Schulgebäude.", assignee: "Luca Hoffmann", due_date: null, status: "offen", priority: "hoch", event_id: null, case_id: null },
     { id: "task-1", title: "Patrick-Kalender als ICS-Quelle anbinden", description: "Patrick gibt einen Apple-Kalender frei; der Link wird als Kalenderquelle hinterlegt.", assignee: "Luca Hoffmann", due_date: "2026-06-20", status: "offen", priority: "hoch", event_id: null, case_id: null },
     { id: "task-2", title: "RIS-Termine systematisch einlesen", description: "Öffentlichen RIS-Kalender als Datenquelle prüfen und Importlogik vervollständigen.", assignee: "Luca Hoffmann", due_date: null, status: "in_bearbeitung", priority: "kritisch", event_id: null, case_id: null }
   ],
