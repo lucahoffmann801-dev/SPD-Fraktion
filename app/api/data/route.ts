@@ -25,6 +25,20 @@ function taskDedupeKey(task: FraktionTask) {
   return `${normalizeTitle(task.title)}:${(task.assignee ?? "").toLowerCase()}`;
 }
 
+function parseProgress(description: string | null | undefined) {
+  const match = description?.match(/\[progress:(\d{1,3})\]/i);
+  if (!match) return null;
+  return Math.max(0, Math.min(100, Number(match[1])));
+}
+
+function normalizeTask(task: FraktionTask): FraktionTask {
+  const existingProgress = typeof task.progress === "number" ? task.progress : null;
+  return {
+    ...task,
+    progress: existingProgress ?? parseProgress(task.description) ?? 0
+  };
+}
+
 function mergeVisibleEvents(events: FraktionEvent[]) {
   const byVisibleIdentity = new Map<string, FraktionEvent>();
   [...sitzungskalender2026, ...events].forEach(event => {
@@ -41,9 +55,9 @@ function mergeVisibleTasks(tasks: FraktionTask[]) {
   const byVisibleIdentity = new Map<string, FraktionTask>();
 
   // Fallback zuerst, echte Daten danach. Wenn Supabase den Auftrag kennt,
-  // gewinnt der dort gepflegte Status.
+  // gewinnt der dort gepflegte Status und Fortschritt.
   [...patrickLucaFallbacks, ...tasks].forEach(task => {
-    byVisibleIdentity.set(taskDedupeKey(task), task);
+    byVisibleIdentity.set(taskDedupeKey(task), normalizeTask(task));
   });
 
   return Array.from(byVisibleIdentity.values()).sort((a, b) => {
