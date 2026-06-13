@@ -30,11 +30,10 @@ export async function getPortalData(): Promise<PortalData> {
     supabase.from("sync_logs").select("*").order("created_at", { ascending: false }).limit(20),
     supabase.from("cases").select("*").order("updated_at", { ascending: false }),
     supabase.from("committees").select("*").order("title", { ascending: true }),
-    supabase.from("committee_memberships").select("sort_order", { count: "exact", head: true })
+    supabase.from("committee_memberships").select("*").order("sort_order", { ascending: true })
   ]);
 
-  const membershipsResult = await supabase.from("committee_memberships").select("*").order("sort_order", { ascending: true });
-  const error = profiles.error || events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error || cases.error || committees.error || memberships.error || membershipsResult.error;
+  const error = profiles.error || events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error || cases.error || committees.error || memberships.error;
   if (error) throw new Error(error.message);
 
   return {
@@ -47,7 +46,7 @@ export async function getPortalData(): Promise<PortalData> {
     sync_logs: syncLogs.data ?? [],
     cases: (cases.data ?? []) as FraktionCase[],
     committees: (committees.data ?? []) as FraktionCommittee[],
-    committee_memberships: (membershipsResult.data ?? []) as CommitteeMembership[],
+    committee_memberships: (memberships.data ?? []) as CommitteeMembership[],
     supabaseConfigured: true
   } as PortalData;
 }
