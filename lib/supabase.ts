@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { demoData } from "./demo-data";
-import type { CrudTable, FraktionProfile, PortalData } from "./types";
+import type { CommitteeMembership, CrudTable, FraktionCase, FraktionCommittee, FraktionProfile, PortalData } from "./types";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -16,21 +16,22 @@ export function getSupabase() {
 
 export async function getPortalData(): Promise<PortalData> {
   const supabase = getSupabase();
-  if (!supabase) {
-    return { ...demoData, supabaseConfigured: false };
-  }
+  if (!supabase) return { ...demoData, supabaseConfigured: false };
 
-  const [profiles, events, tasks, members, documents, calendarSources, syncLogs] = await Promise.all([
+  const [profiles, events, tasks, members, documents, calendarSources, syncLogs, cases, committees, memberships] = await Promise.all([
     supabase.from("profiles").select("*").order("sort_order", { ascending: true }),
     supabase.from("events").select("*").order("starts_at", { ascending: true }),
     supabase.from("tasks").select("*").order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("members").select("*").order("name", { ascending: true }),
     supabase.from("documents").select("*").order("created_at", { ascending: false }),
     supabase.from("calendar_sources").select("*").order("created_at", { ascending: false }),
-    supabase.from("sync_logs").select("*").order("created_at", { ascending: false }).limit(20)
+    supabase.from("sync_logs").select("*").order("created_at", { ascending: false }).limit(20),
+    supabase.from("cases").select("*").order("updated_at", { ascending: false }),
+    supabase.from("committees").select("*").order("title", { ascending: true }),
+    supabase.from("committee_memberships").select("*").order("sort_order", { ascending: true })
   ]);
 
-  const error = profiles.error || events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error;
+  const error = profiles.error || events.error || tasks.error || members.error || documents.error || calendarSources.error || syncLogs.error || cases.error || committees.error || memberships.error;
   if (error) throw new Error(error.message);
 
   return {
@@ -41,6 +42,9 @@ export async function getPortalData(): Promise<PortalData> {
     documents: documents.data ?? [],
     calendar_sources: calendarSources.data ?? [],
     sync_logs: syncLogs.data ?? [],
+    cases: (cases.data ?? []) as FraktionCase[],
+    committees: (committees.data ?? []) as FraktionCommittee[],
+    committee_memberships: (memberships.data ?? []) as CommitteeMembership[],
     supabaseConfigured: true
   } as PortalData;
 }
