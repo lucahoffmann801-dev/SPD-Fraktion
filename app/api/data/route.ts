@@ -31,11 +31,48 @@ function parseProgress(description: string | null | undefined) {
   return Math.max(0, Math.min(100, Number(match[1])));
 }
 
+function parseVisibleTo(description: string | null | undefined) {
+  const privateMatch = description?.match(/\[visible:private:([^\]]+)\]/i);
+  if (!privateMatch) return [];
+  return privateMatch[1].split(",").map(item => item.trim()).filter(Boolean);
+}
+
+function parseAssignees(task: FraktionTask) {
+  if (Array.isArray(task.assignees) && task.assignees.length > 0) return task.assignees;
+  const marker = task.description?.match(/\[assignees:([^\]]+)\]/i);
+  if (marker) return marker[1].split(",").map(item => item.trim()).filter(Boolean);
+  if (task.assignee) return task.assignee.split(",").map(item => item.trim()).filter(Boolean);
+  return [];
+}
+
+function cleanTaskDescription(value: string | null | undefined) {
+  const cleaned = (value ?? "")
+    .replace(/\s*\[progress:\d{1,3}\]/gi, "")
+    .replace(/\s*\[visible:(all|private:[^\]]+)\]/gi, "")
+    .replace(/\s*\[assignees:[^\]]+\]/gi, "")
+    .replace(/\s*\[retention:[^\]]+\]/gi, "")
+    .replace(/\s*\[completed_at:[^\]]+\]/gi, "")
+    .replace(/\s*\[Patrick→Luca\]/g, "")
+    .replace(/\s*\[Patrick-Luca\]/g, "")
+    .trim();
+  return cleaned || null;
+}
+
 function normalizeTask(task: FraktionTask): FraktionTask {
-  const existingProgress = typeof task.progress === "number" ? task.progress : null;
+  const description = task.description ?? null;
+  const markerProgress = parseProgress(description);
+  const isWorkOrder = Boolean(task.is_work_order) || description?.includes("[Patrick→Luca]") || description?.includes("[Patrick-Luca]") || false;
+  const visibleTo = Array.isArray(task.visible_to) && task.visible_to.length > 0 ? task.visible_to : parseVisibleTo(description);
+  const visibility = task.visibility ?? (visibleTo.length > 0 ? "private" : "all");
+
   return {
     ...task,
-    progress: existingProgress ?? parseProgress(task.description) ?? 0
+    description: cleanTaskDescription(description),
+    progress: typeof task.progress === "number" ? task.progress : markerProgress ?? 0,
+    assignees: parseAssignees(task),
+    visibility,
+    visible_to: visibleTo,
+    is_work_order: isWorkOrder
   };
 }
 
@@ -50,12 +87,10 @@ function mergeVisibleEvents(events: FraktionEvent[]) {
 function mergeVisibleTasks(tasks: FraktionTask[]) {
   const patrickLucaFallbacks = demoData.tasks.filter(task =>
     task.assignee === "Luca Hoffmann" &&
-    (task.description ?? "").includes("[Patrick→Luca]")
+    ((task.description ?? "").includes("[Patrick→Luca]") || Boolean(task.is_work_order))
   );
   const byVisibleIdentity = new Map<string, FraktionTask>();
 
-  // Fallback zuerst, echte Daten danach. Wenn Supabase den Auftrag kennt,
-  // gewinnt der dort gepflegte Status und Fortschritt.
   [...patrickLucaFallbacks, ...tasks].forEach(task => {
     byVisibleIdentity.set(taskDedupeKey(task), normalizeTask(task));
   });
