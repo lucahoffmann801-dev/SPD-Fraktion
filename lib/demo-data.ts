@@ -23,16 +23,16 @@ export const cases: FraktionCase[] = [
 ];
 
 export const committees: FraktionCommittee[] = [
-  { id: "c-digital", slug: "digitalausschuss", title: "Digitalausschuss", short_ref: "DA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-schule", slug: "schultraegerausschuss", title: "Schulträgerausschuss", short_ref: "STA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-vr", slug: "verwaltungsrat-stadtentwaesserung", title: "Verwaltungsrat Stadtentwässerung", short_ref: "VR", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-rpa", slug: "rechnungspruefungsausschuss", title: "Rechnungsprüfungsausschuss", short_ref: "RPA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-soz", slug: "sozialausschuss", title: "Sozialausschuss", short_ref: "SoA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-hos", slug: "hospitalausschuss", title: "Hospitalausschuss", short_ref: "HoA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-bau", slug: "bauausschuss", title: "Bauausschuss", short_ref: "BA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-sra", slug: "stadtrechtsausschuss", title: "Stadtrechtsausschuss", short_ref: "SRA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-sp", slug: "sportausschuss", title: "Sportausschuss", short_ref: "SpA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" },
-  { id: "c-wa", slug: "werkausschuss-stadtbildpflege", title: "Werkausschuss Stadtbildpflege", short_ref: "WA", source: "attendance_list", notes: "Seed aus Anwesenheitsliste" }
+  { id: "c-digital", slug: "digitalausschuss", title: "Digitalausschuss", short_ref: "DA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-schule", slug: "schultraegerausschuss", title: "Schulträgerausschuss", short_ref: "STA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-vr", slug: "verwaltungsrat-stadtentwaesserung", title: "Verwaltungsrat Stadtentwässerung", short_ref: "VR", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-rpa", slug: "rechnungspruefungsausschuss", title: "Rechnungsprüfungsausschuss", short_ref: "RPA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-soz", slug: "sozialausschuss", title: "Sozialausschuss", short_ref: "SoA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-hos", slug: "hospitalausschuss", title: "Hospitalausschuss", short_ref: "HoA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-bau", slug: "bauausschuss", title: "Bauausschuss", short_ref: "BA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-sra", slug: "stadtrechtsausschuss", title: "Stadtrechtsausschuss", short_ref: "SRA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-sp", slug: "sportausschuss", title: "Sportausschuss", short_ref: "SpA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." },
+  { id: "c-wa", slug: "werkausschuss-stadtbildpflege", title: "Werkausschuss Stadtbildpflege", short_ref: "WA", source: "attendance_list", notes: "Anwesenheitsliste liegt vor." }
 ];
 
 export const committee_memberships: CommitteeMembership[] = [
@@ -56,21 +56,19 @@ export const demoData: PortalData = {
   committees,
   committee_memberships,
   events: [
-    { id: "demo-1", title: "Stadtrat", starts_at: "2026-06-15T15:00:00+02:00", ends_at: "2026-06-15T16:30:00+02:00", all_day: false, location: "Großer Ratssaal, Rathaus Kaiserslautern", description: "RIS-/Fraktionstermin mit Vorbereitung.", category: "Stadtrat", source: "demo", source_uid: "demo-1", owner: "Patrick", relevance: "beide", status: "scheduled", meeting_body: "Stadtrat", preparation_status: "vorbereiten", requires_preparation: true, decision_needed: true },
-    { id: "demo-2", title: "Bauausschuss", starts_at: "2026-06-21T15:00:00+02:00", ends_at: "2026-06-21T16:45:00+02:00", all_day: false, location: "Großer Ratssaal, Rathaus Kaiserslautern", description: "Beispieltermin aus RIS-Kalenderstruktur.", category: "Ausschuss", source: "demo", source_uid: "demo-2", owner: "Fraktion", relevance: "offen", status: "scheduled", meeting_body: "Bauausschuss", preparation_status: "offen", requires_preparation: true, decision_needed: false }
+    { id: "demo-1", title: "Stadtrat", starts_at: "2026-06-15T15:00:00+02:00", ends_at: "2026-06-15T16:30:00+02:00", all_day: false, location: "Großer Ratssaal, Rathaus Kaiserslautern", description: "Vorbereitung der nächsten Ratssitzung.", category: "Stadtrat", source: "demo", source_uid: "demo-1", owner: "Patrick", relevance: "beide", status: "scheduled", meeting_body: "Stadtrat", preparation_status: "vorbereiten", requires_preparation: true, decision_needed: true },
+    { id: "demo-2", title: "Bauausschuss", starts_at: "2026-06-21T15:00:00+02:00", ends_at: "2026-06-21T16:45:00+02:00", all_day: false, location: "Großer Ratssaal, Rathaus Kaiserslautern", description: "Vorbereitung und Sichtung der anstehenden Bau-Themen.", category: "Ausschuss", source: "demo", source_uid: "demo-2", owner: "Fraktion", relevance: "offen", status: "scheduled", meeting_body: "Bauausschuss", preparation_status: "offen", requires_preparation: true, decision_needed: false }
   ],
   tasks: [
-    { id: "task-patrick-luca-zukunftsforum-schulgebaeude", title: "Planung nächstes Zukunftsforum - Zukunft unserer Schulgebäude", description: "[Patrick→Luca] Probeauftrag von Patrick an Luca zur Planung des nächsten Zukunftsforums zum Thema Zukunft unserer Schulgebäude.", assignee: "Luca Hoffmann", due_date: null, status: "offen", priority: "hoch", event_id: null, case_id: null },
-    { id: "task-1", title: "Patrick-Kalender als ICS-Quelle anbinden", description: "Patrick gibt einen Apple-Kalender frei; der Link wird als Kalenderquelle hinterlegt.", assignee: "Luca Hoffmann", due_date: "2026-06-20", status: "offen", priority: "hoch", event_id: null, case_id: null },
-    { id: "task-2", title: "RIS-Termine systematisch einlesen", description: "Öffentlichen RIS-Kalender als Datenquelle prüfen und Importlogik vervollständigen.", assignee: "Luca Hoffmann", due_date: null, status: "in_bearbeitung", priority: "kritisch", event_id: null, case_id: null }
+    { id: "task-patrick-luca-zukunftsforum-schulgebaeude", title: "Planung nächstes Zukunftsforum - Zukunft unserer Schulgebäude", description: "[Patrick→Luca] Planung des nächsten Zukunftsforums zum Thema Zukunft unserer Schulgebäude.", assignee: "Luca Hoffmann", due_date: null, status: "offen", priority: "hoch", event_id: null, case_id: null }
   ],
   members,
   documents: [
-    { id: "d-1", title: "Anträge und Vorlagen", category: "Arbeitsordner", url: null, description: "Platzhalter für Fraktionsdokumente.", owner: "Luca Hoffmann", document_date: null, status: "arbeitsstand", kind: "Arbeitsordner" }
+    { id: "d-1", title: "Anträge und Vorlagen", category: "Arbeitsordner", url: null, description: "Arbeitsstände, Vorlagen und Entwürfe der Fraktion.", owner: "Luca Hoffmann", document_date: null, status: "arbeitsstand", kind: "Arbeitsordner" }
   ],
   calendar_sources: [
-    { id: "s-1", name: "Patrick Apple Kalender", type: "apple_ics", url: null, owner: "Patrick Schäfer", enabled: false, last_synced_at: null, notes: "ICS-Link hier hinterlegen, nicht das Apple-ID-Passwort." },
-    { id: "s-2", name: "RIS Kaiserslautern", type: "ics", url: "https://ris.kaiserslautern.de/buergerinfo/si0040.asp", owner: "Fraktion", enabled: true, last_synced_at: null, notes: "Öffentlicher Sitzungskalender als Quelle." }
+    { id: "s-1", name: "Patrick Apple Kalender", type: "apple_ics", url: null, owner: "Patrick Schäfer", enabled: false, last_synced_at: null, notes: "Kalenderfreigabe kann hier hinterlegt werden." },
+    { id: "s-2", name: "RIS Kaiserslautern", type: "ics", url: "https://ris.kaiserslautern.de/buergerinfo/si0040.asp", owner: "Fraktion", enabled: true, last_synced_at: null, notes: "Öffentlicher Sitzungskalender der Stadt Kaiserslautern." }
   ],
   sync_logs: []
 };
