@@ -35,10 +35,84 @@ button {
 }
 .status-menu button:active,
 .filter-chip:active,
-.clear-filters:active {
+.clear-filters:active,
+.native-status-option:active,
+.native-status-cancel:active {
   transform: scale(.985);
   opacity: .86;
 }
+
+.native-status-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+.native-status-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, .26);
+  backdrop-filter: blur(3px);
+}
+.native-status-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px calc(env(safe-area-inset-bottom) + 18px);
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  box-shadow: 0 -20px 42px rgba(15, 23, 42, .18);
+  animation: statusSheetIn .18s ease-out;
+}
+.native-status-grabber {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d1d5db;
+  justify-self: center;
+  margin-bottom: 3px;
+}
+.native-status-title {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  padding: 2px 2px 6px;
+}
+.native-status-option,
+.native-status-cancel {
+  min-height: 48px;
+  border: 0;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #f4f5f7;
+  color: var(--ink);
+  text-align: left;
+}
+.native-status-cancel {
+  justify-content: center;
+  background: #fff1f2;
+  color: var(--red);
+}
+.native-status-dot {
+  width: 9px;
+  height: 28px;
+  border-radius: 999px;
+  background: #9ca3af;
+}
+.status-dot-1 { background: #f59e0b; }
+.status-dot-2 { background: #a855f7; }
+.status-dot-3 { background: #64748b; }
+.status-dot-4 { background: #3b82f6; }
+.status-dot-5 { background: #10b981; }
 
 @media (max-width: 860px) {
   .monday-board { overflow: visible; scroll-snap-type: none; }
@@ -47,66 +121,12 @@ button {
     position: static;
     box-shadow: none;
   }
-  .status-dropdown[open]::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 80;
-    background: rgba(15, 23, 42, .24);
-    backdrop-filter: blur(3px);
-  }
+
+  /* Disable the old <details>-driven mobile sheet. MobileStatusBridge renders the real one. */
+  .status-dropdown[open]::before,
   .status-dropdown[open] .status-menu {
-    position: fixed;
-    z-index: 90;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
-    display: grid;
-    gap: 8px;
-    padding: 14px 16px calc(env(safe-area-inset-bottom) + 18px);
-    border: 0;
-    border-radius: 20px 20px 0 0;
-    background: #fff;
-    box-shadow: 0 -20px 42px rgba(15, 23, 42, .18);
-    animation: statusSheetIn .18s ease-out;
+    display: none !important;
   }
-  .status-dropdown[open] .status-menu::before {
-    content: "Status ändern";
-    display: block;
-    color: var(--ink);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: -.01em;
-    padding: 2px 2px 6px;
-  }
-  .status-dropdown[open] .status-menu::after {
-    content: "";
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    width: 42px;
-    height: 4px;
-    border-radius: 999px;
-    background: #d1d5db;
-    transform: translateX(-50%);
-  }
-  .status-dropdown[open] .status-menu button {
-    min-height: 48px;
-    border-radius: 13px;
-    display: flex;
-    align-items: center;
-    padding: 0 13px;
-    font-size: 15px;
-    font-weight: 600;
-    background: #f4f5f7;
-  }
-  .status-dropdown[open] .status-menu button:nth-child(1) { border-left: 7px solid #9ca3af; }
-  .status-dropdown[open] .status-menu button:nth-child(2) { border-left: 7px solid #f59e0b; }
-  .status-dropdown[open] .status-menu button:nth-child(3) { border-left: 7px solid #a855f7; }
-  .status-dropdown[open] .status-menu button:nth-child(4) { border-left: 7px solid #64748b; }
-  .status-dropdown[open] .status-menu button:nth-child(5) { border-left: 7px solid #3b82f6; }
-  .status-dropdown[open] .status-menu button:nth-child(6) { border-left: 7px solid #10b981; }
 }
 
 @keyframes statusSheetIn {
