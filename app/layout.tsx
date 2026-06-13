@@ -11,6 +11,7 @@ import "./mobile-monday.css";
 import "./visual-tuning.css";
 import "./progress-slider.css";
 import "./task-assignment.css";
+import "./interface-polish.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
