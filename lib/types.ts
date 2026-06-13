@@ -3,6 +3,9 @@ export type TaskStatus = "offen" | "in_bearbeitung" | "wartend" | "pruefung" | "
 export type TaskPriority = "niedrig" | "normal" | "hoch" | "kritisch";
 export type Relevance = "offen" | "relevant" | "nicht_relevant" | "patrick" | "luca" | "beide";
 export type PortalRole = "fraktionsvorsitz" | "stellvertretung" | "ratsmitglied" | "fraktionssekretariat" | "admin";
+export type PreparationStatus = "offen" | "unterlagen_fehlen" | "vorbereiten" | "rueckfrage" | "vorbereitet" | "erledigt";
+export type CaseStatus = "offen" | "in_bearbeitung" | "wartet" | "entschieden" | "erledigt" | "archiv";
+export type CommitteeRole = "member" | "substitute";
 
 export type FraktionProfile = {
   id: string;
@@ -27,6 +30,42 @@ export type FraktionProfile = {
   updated_at?: string;
 };
 
+export type FraktionCase = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  status: CaseStatus | string;
+  priority: TaskPriority | string;
+  owner: string | null;
+  next_step: string | null;
+  due_date: string | null;
+  tags: string[] | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type FraktionCommittee = {
+  id: string;
+  slug: string;
+  title: string;
+  short_ref: string | null;
+  source: string | null;
+  notes: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CommitteeMembership = {
+  id: string;
+  committee_slug: string;
+  person_name: string;
+  role: CommitteeRole;
+  sort_order: number;
+  source_file: string | null;
+  created_at?: string;
+};
+
 export type FraktionEvent = {
   id: string;
   title: string;
@@ -41,6 +80,12 @@ export type FraktionEvent = {
   owner: string | null;
   relevance: Relevance | null;
   status: EventStatus | null;
+  meeting_body?: string | null;
+  ris_url?: string | null;
+  preparation_status?: PreparationStatus | string | null;
+  requires_preparation?: boolean;
+  decision_needed?: boolean;
+  case_id?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -54,6 +99,7 @@ export type FraktionTask = {
   status: TaskStatus;
   priority: TaskPriority;
   event_id: string | null;
+  case_id?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -77,6 +123,9 @@ export type FraktionDocument = {
   description: string | null;
   owner: string | null;
   document_date: string | null;
+  case_id?: string | null;
+  status?: string | null;
+  kind?: string | null;
   created_at?: string;
 };
 
@@ -109,8 +158,11 @@ export type PortalData = {
   documents: FraktionDocument[];
   calendar_sources: CalendarSource[];
   sync_logs: SyncLog[];
+  cases: FraktionCase[];
+  committees: FraktionCommittee[];
+  committee_memberships: CommitteeMembership[];
   supabaseConfigured: boolean;
   error?: string;
 };
 
-export type CrudTable = "events" | "tasks" | "members" | "documents" | "calendar_sources" | "profiles";
+export type CrudTable = "events" | "tasks" | "members" | "documents" | "calendar_sources" | "profiles" | "cases" | "committees" | "committee_memberships";
