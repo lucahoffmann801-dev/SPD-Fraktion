@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import MobileStatusBridge from "./MobileStatusBridge";
+import TaskAssignmentBridge from "./TaskAssignmentBridge";
 import "./globals.css";
 import "./termine-filter.css";
 import "./menu-icons.css";
@@ -8,6 +9,7 @@ import "./luca-assets.css";
 import "./mobile-monday.css";
 import "./visual-tuning.css";
 import "./progress-slider.css";
+import "./task-assignment.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
@@ -33,6 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="de">
       <body>
         <MobileStatusBridge />
+        <TaskAssignmentBridge />
         {children}
       </body>
     </html>
