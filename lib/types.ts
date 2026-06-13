@@ -98,6 +98,7 @@ export type FraktionTask = {
   due_date: string | null;
   status: TaskStatus | string;
   priority: TaskPriority | string;
+  progress?: number | null;
   event_id: string | null;
   case_id?: string | null;
   created_at?: string;
