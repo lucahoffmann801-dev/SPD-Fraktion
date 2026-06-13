@@ -1,5 +1,5 @@
 export type EventStatus = "scheduled" | "changed" | "cancelled" | "tentative";
-export type TaskStatus = "offen" | "in_bearbeitung" | "wartend" | "pruefung" | "erledigt" | "verworfen";
+export type TaskStatus = "offen" | "in_bearbeitung" | "rueckfrage" | "wartend" | "pruefung" | "erledigt" | "verworfen";
 export type TaskPriority = "niedrig" | "normal" | "hoch" | "kritisch";
 export type Relevance = "offen" | "relevant" | "nicht_relevant" | "patrick" | "luca" | "beide";
 export type PortalRole = "fraktionsvorsitz" | "stellvertretung" | "ratsmitglied" | "fraktionssekretariat" | "admin";
@@ -96,8 +96,8 @@ export type FraktionTask = {
   description: string | null;
   assignee: string | null;
   due_date: string | null;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: TaskStatus | string;
+  priority: TaskPriority | string;
   event_id: string | null;
   case_id?: string | null;
   created_at?: string;
