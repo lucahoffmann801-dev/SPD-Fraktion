@@ -44,6 +44,19 @@
   outline-offset: 2px;
 }
 
+.controlled-progress-cell::before,
+.progress-cell:has(.progress-box)::before {
+  content: none !important;
+  display: none !important;
+}
+.controlled-progress-cell > span,
+.progress-cell:has(.progress-box) > span {
+  display: none !important;
+}
+.controlled-progress-cell {
+  background: #f4f5f7 !important;
+}
+
 .native-status-sheet {
   padding-top: 16px;
 }
@@ -99,6 +112,9 @@
   .status-cell {
     min-height: 46px;
     border-radius: 12px;
+  }
+  .controlled-progress-cell {
+    background: transparent !important;
   }
   .progress-value {
     min-width: 48px;
