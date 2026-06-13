@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./termine-filter.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
