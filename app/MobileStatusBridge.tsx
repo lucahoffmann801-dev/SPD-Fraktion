@@ -33,16 +33,12 @@ function rowAssignee(row: Element | null) {
 function setProgressVisual(row: Element, progress: number) {
   const clamped = Math.max(0, Math.min(100, Math.round(progress)));
   const progressCell = row.querySelector<HTMLElement>(".progress-cell");
-  const bar = progressCell?.querySelector<HTMLElement>("span");
-  const range = progressCell?.querySelector<HTMLInputElement>("input[type='range']");
+  const fill = progressCell?.querySelector<HTMLElement>(".progress-fill");
   const value = progressCell?.querySelector<HTMLElement>(".progress-value");
-
-  if (bar) bar.style.width = `${clamped}%`;
-  if (range) {
-    range.value = String(clamped);
-    range.style.setProperty("--progress", `${clamped}%`);
-  }
+  const range = progressCell?.querySelector<HTMLInputElement>("input[type='range']");
+  if (fill) fill.style.width = `${clamped}%`;
   if (value) value.textContent = `${clamped}%`;
+  if (range) range.value = String(clamped);
   row.setAttribute("data-progress", String(clamped));
 }
 
@@ -70,50 +66,8 @@ async function persistWorkOrder(row: Element, payload: { status?: string; progre
   });
 }
 
-function enhanceProgressSliders() {
-  document.querySelectorAll<HTMLElement>(".monday-row").forEach(row => {
-    const progressCell = row.querySelector<HTMLElement>(".progress-cell");
-    if (!progressCell || progressCell.querySelector("input[type='range']")) return;
-
-    const existingBar = progressCell.querySelector<HTMLElement>("span");
-    const existingWidth = existingBar?.style.width?.replace("%", "");
-    const status = row.getAttribute("data-status") || row.querySelector<HTMLElement>(".status-cell")?.className.match(/status-([a-z_]+)/)?.[1] || "offen";
-    const initial = Number(existingWidth || fallbackProgressByStatus[status] || 0);
-
-    progressCell.classList.add("progress-control");
-    progressCell.innerHTML = `
-      <span class="progress-track-fill"></span>
-      <input class="progress-range" type="range" min="0" max="100" step="1" value="${initial}" aria-label="Fortschritt festlegen" />
-      <strong class="progress-value">${initial}%</strong>
-    `;
-
-    const range = progressCell.querySelector<HTMLInputElement>(".progress-range");
-    if (!range) return;
-
-    setProgressVisual(row, initial);
-
-    range.addEventListener("input", () => {
-      setProgressVisual(row, Number(range.value));
-    });
-
-    range.addEventListener("change", () => {
-      const progress = Number(range.value);
-      setProgressVisual(row, progress);
-      persistWorkOrder(row, { progress }).catch(() => undefined);
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(6);
-    });
-  });
-}
-
 export default function MobileStatusBridge() {
   const [sheet, setSheet] = useState<StatusSheet | null>(null);
-
-  useEffect(() => {
-    enhanceProgressSliders();
-    const observer = new MutationObserver(() => enhanceProgressSliders());
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     function handleStatusTap(event: MouseEvent) {
