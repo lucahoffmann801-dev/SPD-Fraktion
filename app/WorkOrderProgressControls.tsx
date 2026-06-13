@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 type ProgressProps = {
@@ -22,27 +22,6 @@ function rowTitle(row: Element) {
 function rowAssignee(row: Element) {
   const text = row.querySelector(".monday-person span:last-child")?.textContent?.trim();
   return text === "Luca" || !text ? "Luca Hoffmann" : text;
-}
-
-function storageKey(row: Element) {
-  return `work-order-progress:${rowTitle(row)}:${rowAssignee(row)}`;
-}
-
-function readStoredProgress(row: Element) {
-  try {
-    const raw = localStorage.getItem(storageKey(row));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { progress?: number };
-    return typeof parsed.progress === "number" ? clamp(parsed.progress) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredProgress(row: Element, progress: number) {
-  try {
-    localStorage.setItem(storageKey(row), JSON.stringify({ progress: clamp(progress), updatedAt: Date.now() }));
-  } catch {}
 }
 
 function markerProgress(row: Element) {
@@ -67,7 +46,7 @@ function cleanMarkers(row: Element) {
 async function saveProgress(row: Element, progress: number) {
   const title = rowTitle(row);
   if (!title) return;
-  await fetch("/api/work-orders", {
+  const response = await fetch("/api/work-orders", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -76,6 +55,7 @@ async function saveProgress(row: Element, progress: number) {
       progress: clamp(progress)
     })
   });
+  if (!response.ok) throw new Error("Fortschritt konnte nicht gespeichert werden");
 }
 
 function colorFor(progress: number) {
@@ -85,9 +65,8 @@ function colorFor(progress: number) {
 }
 
 function WorkOrderProgressControl({ row, initial }: ProgressProps) {
-  const stored = useMemo(() => readStoredProgress(row), [row]);
-  const [progress, setProgress] = useState(clamp(stored ?? markerProgress(row) ?? initial));
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "local">("idle");
+  const [progress, setProgress] = useState(clamp(markerProgress(row) ?? initial));
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const color = colorFor(progress);
 
   useEffect(() => {
@@ -98,17 +77,17 @@ function WorkOrderProgressControl({ row, initial }: ProgressProps) {
     const value = clamp(next);
     setProgress(value);
     setState("saving");
-    writeStoredProgress(row, value);
   }
 
   async function commit(next: number) {
     const value = clamp(next);
-    writeStoredProgress(row, value);
+    setProgress(value);
+    setState("saving");
     try {
       await saveProgress(row, value);
       setState("saved");
     } catch {
-      setState("local");
+      setState("error");
     }
   }
 
@@ -137,7 +116,7 @@ function WorkOrderProgressControl({ row, initial }: ProgressProps) {
         />
       </div>
       <div className="progress-save-state">
-        {state === "saving" ? "speichert…" : state === "saved" ? "gespeichert" : state === "local" ? "lokal gespeichert" : ""}
+        {state === "saving" ? "speichert…" : state === "saved" ? "gespeichert" : state === "error" ? "nicht gespeichert" : ""}
       </div>
     </div>
   );
