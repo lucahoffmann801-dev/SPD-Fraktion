@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { demoData } from "@/lib/demo-data";
 import { deleteRecord, insertRecord, updateRecord } from "@/lib/supabase";
 import type { CrudTable } from "@/lib/types";
 
@@ -6,6 +7,10 @@ const allowed = new Set(["events", "tasks", "members", "documents", "calendar_so
 
 function validTable(table: unknown): table is CrudTable {
   return typeof table === "string" && allowed.has(table);
+}
+
+function fallbackTaskById(id: string) {
+  return demoData.tasks.find(task => task.id === id && (task.description ?? "").includes("[Patrick→Luca]"));
 }
 
 export async function POST(request: NextRequest) {
@@ -25,6 +30,16 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     if (!validTable(body.table) || typeof body.id !== "string") return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
     const result = await updateRecord(body.table, body.id, body.payload ?? {});
+
+    if (body.table === "tasks" && Array.isArray(result) && result.length === 0) {
+      const fallback = fallbackTaskById(body.id);
+      if (fallback) {
+        const [{ id: _id, ...payload }] = [{ ...fallback, ...(body.payload ?? {}) }];
+        const inserted = await insertRecord("tasks", payload);
+        return NextResponse.json({ ok: true, result: inserted, createdFromFallback: true });
+      }
+    }
+
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Aktualisieren fehlgeschlagen";
