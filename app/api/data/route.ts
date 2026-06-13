@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { demoData } from "@/lib/demo-data";
 import { sitzungskalender2026 } from "@/lib/sitzungskalender-2026";
 import { getPortalData } from "@/lib/supabase";
-import type { FraktionEvent, PortalData } from "@/lib/types";
+import type { FraktionEvent, FraktionTask, PortalData } from "@/lib/types";
 
 function normalizeTitle(title: string) {
   return title
@@ -21,22 +21,43 @@ function eventDedupeKey(event: FraktionEvent) {
   return `${isoMinute}:${normalizeTitle(event.title)}`;
 }
 
+function taskDedupeKey(task: FraktionTask) {
+  return `${normalizeTitle(task.title)}:${(task.assignee ?? "").toLowerCase()}`;
+}
+
 function mergeVisibleEvents(events: FraktionEvent[]) {
   const byVisibleIdentity = new Map<string, FraktionEvent>();
-
-  // Fallback zuerst, echte Supabase-/manuelle Daten danach. Wenn beides denselben
-  // Termin beschreibt, gewinnt der Datenbankeintrag mit ggf. gepflegtem Status.
   [...sitzungskalender2026, ...events].forEach(event => {
     byVisibleIdentity.set(eventDedupeKey(event), event);
   });
-
   return Array.from(byVisibleIdentity.values()).sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
 }
 
-function withCalendarFallback(data: PortalData): PortalData {
+function mergeVisibleTasks(tasks: FraktionTask[]) {
+  const patrickLucaFallbacks = demoData.tasks.filter(task =>
+    task.assignee === "Luca Hoffmann" &&
+    (task.description ?? "").includes("[Patrick→Luca]")
+  );
+  const byVisibleIdentity = new Map<string, FraktionTask>();
+
+  // Fallback zuerst, echte Daten danach. Wenn Supabase den Auftrag kennt,
+  // gewinnt der dort gepflegte Status.
+  [...patrickLucaFallbacks, ...tasks].forEach(task => {
+    byVisibleIdentity.set(taskDedupeKey(task), task);
+  });
+
+  return Array.from(byVisibleIdentity.values()).sort((a, b) => {
+    const aTime = a.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+    const bTime = b.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+    return aTime - bTime;
+  });
+}
+
+function withFallbacks(data: PortalData): PortalData {
   return {
     ...data,
-    events: mergeVisibleEvents(data.events ?? [])
+    events: mergeVisibleEvents(data.events ?? []),
+    tasks: mergeVisibleTasks(data.tasks ?? [])
   };
 }
 
@@ -44,11 +65,11 @@ export async function GET() {
   try {
     const data = await getPortalData();
     if (!data.supabaseConfigured) {
-      return NextResponse.json(withCalendarFallback({ ...demoData, supabaseConfigured: false }));
+      return NextResponse.json(withFallbacks({ ...demoData, supabaseConfigured: false }));
     }
-    return NextResponse.json(withCalendarFallback(data));
+    return NextResponse.json(withFallbacks(data));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-    return NextResponse.json(withCalendarFallback({ ...demoData, supabaseConfigured: false, error: message }), { status: 200 });
+    return NextResponse.json(withFallbacks({ ...demoData, supabaseConfigured: false, error: message }), { status: 200 });
   }
 }
