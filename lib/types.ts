@@ -1,0 +1,91 @@
+export type EventStatus = "scheduled" | "changed" | "cancelled" | "tentative";
+export type TaskStatus = "offen" | "in_bearbeitung" | "wartend" | "pruefung" | "erledigt" | "verworfen";
+export type TaskPriority = "niedrig" | "normal" | "hoch" | "kritisch";
+export type Relevance = "offen" | "relevant" | "nicht_relevant" | "patrick" | "luca" | "beide";
+
+export type FraktionEvent = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  location: string | null;
+  description: string | null;
+  category: string | null;
+  source: string | null;
+  source_uid: string | null;
+  owner: string | null;
+  relevance: Relevance | null;
+  status: EventStatus | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type FraktionTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  assignee: string | null;
+  due_date: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  event_id: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type FraktionMember = {
+  id: string;
+  name: string;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  committees: string | null;
+  avatar_url: string | null;
+  notes: string | null;
+};
+
+export type FraktionDocument = {
+  id: string;
+  title: string;
+  category: string | null;
+  url: string | null;
+  description: string | null;
+  owner: string | null;
+  document_date: string | null;
+  created_at?: string;
+};
+
+export type CalendarSource = {
+  id: string;
+  name: string;
+  type: "apple_ics" | "ics" | "manual" | "caldav_planned";
+  url: string | null;
+  owner: string | null;
+  enabled: boolean;
+  last_synced_at: string | null;
+  notes: string | null;
+  created_at?: string;
+};
+
+export type SyncLog = {
+  id: string;
+  source_id: string | null;
+  status: "ok" | "warning" | "error";
+  message: string | null;
+  imported_count: number;
+  created_at: string;
+};
+
+export type PortalData = {
+  events: FraktionEvent[];
+  tasks: FraktionTask[];
+  members: FraktionMember[];
+  documents: FraktionDocument[];
+  calendar_sources: CalendarSource[];
+  sync_logs: SyncLog[];
+  supabaseConfigured: boolean;
+  error?: string;
+};
+
+export type CrudTable = "events" | "tasks" | "members" | "documents" | "calendar_sources";
