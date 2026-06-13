@@ -1,0 +1,23 @@
+@media (min-width: 861px) {
+  .section.active > .content-grid > .panel:has(.monday-board) {
+    grid-column: 1 / -1;
+  }
+  .section.active > .content-grid > .panel:has(.monday-board) + .panel {
+    grid-column: 1 / -1;
+  }
+  .section.active > .content-grid > .panel:has(.monday-board) .monday-board {
+    max-width: 1120px;
+    margin-inline: auto;
+  }
+}
+
+.controlled-progress-cell::before,
+.progress-cell:has(.progress-box)::before {
+  content: none !important;
+  display: none !important;
+}
+
+.controlled-progress-cell > span,
+.progress-cell:has(.progress-box) > span {
+  display: none !important;
+}
