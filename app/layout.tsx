@@ -1,7 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import MobileStatusBridge from "./MobileStatusBridge";
-import TaskAssignmentBridgeStable from "./TaskAssignmentBridgeStable";
-import WorkOrderProgressControls from "./WorkOrderProgressControls";
 import "./globals.css";
 import "./termine-filter.css";
 import "./menu-icons.css";
@@ -36,12 +33,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de">
-      <body>
-        <MobileStatusBridge />
-        <TaskAssignmentBridgeStable />
-        <WorkOrderProgressControls />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
