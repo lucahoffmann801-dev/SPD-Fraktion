@@ -1,22 +1,20 @@
 # Zuordnung der hochgeladenen Profilbilder
 
-Die Bilder wurden zunächst von GitHub als iPhone-Dateinamen hochgeladen. Laut Angabe von Luca ist die Reihenfolge im Ordner `public/profile-images`:
+Die Bilder enthalten laut Luca ausschließlich die 12 Fraktionsmitglieder, beginnend mit Patrick Schäfer und endend mit Marcel Schulz. Luca Hoffmann ist in dieser Bildreihe nicht enthalten.
 
-| Hochgeladen | Soll-Zuordnung |
+| Hochgeladen | App-Pfad / Zuordnung |
 |---|---|
-| IMG_0078.jpeg | luca-hoffmann.jpg |
-| IMG_0079.jpeg | patrick-schaefer.jpg |
-| IMG_0080.jpeg | janina-eispert.jpg |
-| IMG_0081.jpeg | harald-brandstaedter.jpg |
-| IMG_0082.jpeg | andreas-rahm.jpg |
-| IMG_0083.jpeg | raymond-germany.jpg |
-| IMG_0084.jpeg | michael-krauss.jpg |
-| IMG_0085.jpeg | anna-raab.jpg |
-| IMG_0086.jpeg | heike-spies.jpg |
-| IMG_0087.jpeg | petra-janson-peermann.jpg |
-| IMG_0088.jpeg | moritz-behncke.jpg |
-| IMG_0090.jpeg | joerg-harz.jpg |
+| IMG_0078.jpeg | patrick-schaefer |
+| IMG_0079.jpeg | janina-eispert |
+| IMG_0080.jpeg | harald-brandstaedter |
+| IMG_0081.jpeg | andreas-rahm |
+| IMG_0082.jpeg | raymond-germany |
+| IMG_0083.jpeg | michael-krauss |
+| IMG_0084.jpeg | anna-raab |
+| IMG_0085.jpeg | heike-spies |
+| IMG_0086.jpeg | petra-janson-peermann |
+| IMG_0087.jpeg | moritz-behncke |
+| IMG_0088.jpeg | joerg-harz |
+| IMG_0090.jpeg | marcel-schulz |
 
-Hinweis: Ein eigenes Bild für `marcel-schulz.jpg` ist in der sichtbaren Upload-Reihenfolge nicht enthalten. In der Screenshot-Liste fehlen nach `IMG_0088.jpeg` die `IMG_0089.jpeg`; danach folgt `IMG_0090.jpeg`.
-
-Solange die Dateien nicht technisch umbenannt sind, kann die App diese Mapping-Tabelle nutzen, um die richtigen Bilder zu laden.
+Die App nutzt diese Zuordnung direkt, ohne dass die hochgeladenen Dateien technisch umbenannt werden müssen.
