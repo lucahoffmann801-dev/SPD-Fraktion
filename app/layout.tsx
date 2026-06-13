@@ -5,6 +5,7 @@ import "./menu-icons.css";
 import "./work-orders.css";
 import "./luca-assets.css";
 import "./mobile-monday.css";
+import "./visual-tuning.css";
 
 export const metadata: Metadata = {
   title: "SPD-Fraktion KL · Internes Portal",
@@ -21,7 +22,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e3000f"
+  themeColor: "#e3000f",
+  viewportFit: "cover"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
