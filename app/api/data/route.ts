@@ -4,6 +4,16 @@ import { sitzungskalender2026 } from "@/lib/sitzungskalender-2026";
 import { getPortalData } from "@/lib/supabase";
 import type { FraktionEvent, FraktionTask, PortalData } from "@/lib/types";
 
+type StructuredTask = FraktionTask & {
+  assignees?: string[] | null;
+  visibility?: string | null;
+  visible_to?: string[] | null;
+  retention_days?: number | null;
+  completed_at?: string | null;
+  is_work_order?: boolean | null;
+  created_by?: string | null;
+};
+
 function normalizeTitle(title: string) {
   return title
     .toLowerCase()
@@ -37,7 +47,7 @@ function parseVisibleTo(description: string | null | undefined) {
   return privateMatch[1].split(",").map(item => item.trim()).filter(Boolean);
 }
 
-function parseAssignees(task: FraktionTask) {
+function parseAssignees(task: StructuredTask) {
   if (Array.isArray(task.assignees) && task.assignees.length > 0) return task.assignees;
   const marker = task.description?.match(/\[assignees:([^\]]+)\]/i);
   if (marker) return marker[1].split(",").map(item => item.trim()).filter(Boolean);
@@ -59,21 +69,22 @@ function cleanTaskDescription(value: string | null | undefined) {
 }
 
 function normalizeTask(task: FraktionTask): FraktionTask {
-  const description = task.description ?? null;
+  const structured = task as StructuredTask;
+  const description = structured.description ?? null;
   const markerProgress = parseProgress(description);
-  const isWorkOrder = Boolean(task.is_work_order) || description?.includes("[Patrick→Luca]") || description?.includes("[Patrick-Luca]") || false;
-  const visibleTo = Array.isArray(task.visible_to) && task.visible_to.length > 0 ? task.visible_to : parseVisibleTo(description);
-  const visibility = task.visibility ?? (visibleTo.length > 0 ? "private" : "all");
+  const isWorkOrder = Boolean(structured.is_work_order) || description?.includes("[Patrick→Luca]") || description?.includes("[Patrick-Luca]") || false;
+  const visibleTo = Array.isArray(structured.visible_to) && structured.visible_to.length > 0 ? structured.visible_to : parseVisibleTo(description);
+  const visibility = structured.visibility ?? (visibleTo.length > 0 ? "private" : "all");
 
   return {
-    ...task,
+    ...structured,
     description: cleanTaskDescription(description),
-    progress: typeof task.progress === "number" ? task.progress : markerProgress ?? 0,
-    assignees: parseAssignees(task),
+    progress: typeof structured.progress === "number" ? structured.progress : markerProgress ?? 0,
+    assignees: parseAssignees(structured),
     visibility,
     visible_to: visibleTo,
     is_work_order: isWorkOrder
-  };
+  } as FraktionTask;
 }
 
 function mergeVisibleEvents(events: FraktionEvent[]) {
@@ -87,7 +98,7 @@ function mergeVisibleEvents(events: FraktionEvent[]) {
 function mergeVisibleTasks(tasks: FraktionTask[]) {
   const patrickLucaFallbacks = demoData.tasks.filter(task =>
     task.assignee === "Luca Hoffmann" &&
-    ((task.description ?? "").includes("[Patrick→Luca]") || Boolean(task.is_work_order))
+    ((task.description ?? "").includes("[Patrick→Luca]") || Boolean((task as StructuredTask).is_work_order))
   );
   const byVisibleIdentity = new Map<string, FraktionTask>();
 
