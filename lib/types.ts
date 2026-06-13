@@ -2,6 +2,30 @@ export type EventStatus = "scheduled" | "changed" | "cancelled" | "tentative";
 export type TaskStatus = "offen" | "in_bearbeitung" | "wartend" | "pruefung" | "erledigt" | "verworfen";
 export type TaskPriority = "niedrig" | "normal" | "hoch" | "kritisch";
 export type Relevance = "offen" | "relevant" | "nicht_relevant" | "patrick" | "luca" | "beide";
+export type PortalRole = "fraktionsvorsitz" | "stellvertretung" | "ratsmitglied" | "fraktionssekretariat" | "admin";
+
+export type FraktionProfile = {
+  id: string;
+  slug: string;
+  full_name: string;
+  display_name: string;
+  role: string;
+  board_role: string | null;
+  portal_role: PortalRole;
+  is_council_member: boolean;
+  is_staff: boolean;
+  email: string | null;
+  phone: string | null;
+  committees: string | null;
+  bio: string | null;
+  permissions: string[] | null;
+  avatar_initials: string;
+  accent: string | null;
+  sort_order: number;
+  login_enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
 
 export type FraktionEvent = {
   id: string;
@@ -78,6 +102,7 @@ export type SyncLog = {
 };
 
 export type PortalData = {
+  profiles: FraktionProfile[];
   events: FraktionEvent[];
   tasks: FraktionTask[];
   members: FraktionMember[];
@@ -88,4 +113,4 @@ export type PortalData = {
   error?: string;
 };
 
-export type CrudTable = "events" | "tasks" | "members" | "documents" | "calendar_sources";
+export type CrudTable = "events" | "tasks" | "members" | "documents" | "calendar_sources" | "profiles";
