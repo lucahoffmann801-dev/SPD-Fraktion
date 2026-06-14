@@ -1,7 +1,0 @@
-{
-  "buildCommand": "pnpm --filter @workspace/portal-next run build",
-  "outputDirectory": "artifacts/portal-next/.next",
-  "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "devCommand": "pnpm --filter @workspace/portal-next run dev"
-}
