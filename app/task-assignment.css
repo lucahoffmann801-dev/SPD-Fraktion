@@ -1,0 +1,137 @@
+.hidden-original-assignee,
+.hidden-case-select {
+  display: none !important;
+}
+.assignment-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.assignment-panel-head,
+.visibility-panel,
+.retention-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.assignment-panel-head {
+  justify-content: space-between;
+}
+.assignment-panel-head strong,
+.visibility-panel strong,
+.retention-panel strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+.assign-all {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--red);
+  font-weight: 700;
+}
+.assignment-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.assign-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+}
+.assign-person.selected {
+  border-color: rgba(227, 0, 15, .45);
+  background: rgba(227, 0, 15, .07);
+  color: var(--red);
+}
+.assign-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  background: #f1d6d9;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 700;
+}
+.assign-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.visibility-panel label {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.visibility-panel input {
+  accent-color: var(--red);
+}
+.retention-panel {
+  padding-top: 2px;
+}
+.retention-panel .select {
+  min-height: 36px;
+  flex: 1 1 220px;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+.retention-panel::after {
+  content: "Regelt, was nach dem Erledigen mit der Aufgabe passieren soll.";
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+@media (max-width: 860px) {
+  .assignment-panel {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .assignment-people {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .assign-person {
+    flex: 0 0 auto;
+  }
+  .retention-panel {
+    align-items: stretch;
+  }
+  .retention-panel strong,
+  .retention-panel .select {
+    flex-basis: 100%;
+  }
+}
