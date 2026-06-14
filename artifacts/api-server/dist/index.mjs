@@ -16954,9 +16954,9 @@ var require_get_proto = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/hasown@2.0.3/node_modules/hasown/index.js
+// ../../node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js
 var require_hasown = __commonJS({
-  "../../node_modules/.pnpm/hasown@2.0.3/node_modules/hasown/index.js"(exports, module) {
+  "../../node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js"(exports, module) {
     "use strict";
     var call = Function.prototype.call;
     var $hasOwn = Object.prototype.hasOwnProperty;

@@ -1,0 +1,24 @@
+{
+  "name": "@workspace/portal-next",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.21.0",
+    "@supabase/supabase-js": "^2.108.1",
+    "next": "^15.3.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "~5.9.3"
+  }
+}

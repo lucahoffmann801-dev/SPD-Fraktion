@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/portal-next/"
+title = "SPD-Fraktion Portal (Next.js)"
+version = "1.0.0"
+id = "artifacts/portal-next"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/portal-next/" ]
+localPort = 19547
+
+[services.development]
+run = "pnpm --filter @workspace/portal-next run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/portal-next", "run", "build" ]
+publicDir = "artifacts/portal-next/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19547"
+BASE_PATH = "/portal-next/"

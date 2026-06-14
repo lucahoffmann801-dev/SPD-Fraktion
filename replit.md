@@ -4,46 +4,47 @@ Ein internes Fraktionsportal für Termine, Aufgaben, Vorgänge, Ausschüsse, Pro
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+```bash
+# Primäres Artifact (Next.js 15 — Vercel-Deployment)
+pnpm --filter @workspace/portal-next run dev
+
+# Legacy Replit-Artifacts
+pnpm --filter @workspace/api-server run dev   # Port 5000
+pnpm --filter @workspace/portal run dev
+
+# Alles
+pnpm run typecheck
+pnpm run build
+pnpm --filter @workspace/api-spec run codegen  # nach OpenAPI-Änderungen
+```
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- **PRIMARY**: Next.js 15 (App Router) in `artifacts/portal-next/` → Vercel
+- **Legacy (Replit only)**: Express 5 (`artifacts/api-server/`) + Vite React (`artifacts/portal/`)
+- Mobile: Expo React Native (`artifacts/portal-mobile/`)
+- DB: Supabase (PostgreSQL) — App läuft ohne Supabase im Demo-Modus
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
 
 ## Where things live
 
-- `artifacts/portal/src/pages/home.tsx` — single-page app (all views/sections)
-- `artifacts/portal/src/lib/` — types, demo data, supabase client, calendar utils
-- `artifacts/portal/public/` — profile images, menu icons, logo
-- `artifacts/api-server/src/routes/portal-*.ts` — API routes (data, auth, records, work-orders, ics)
-- `artifacts/api-server/src/lib/supabase.ts` — server-side Supabase client
+- `artifacts/portal-next/app/` — Next.js App Router (layouts, pages, API routes)
+- `artifacts/portal-next/src/pages/home.tsx` — Haupt-SPA (alle Views, "use client")
+- `artifacts/portal-next/src/lib/` — Browser-Typen, Demo-Daten, Supabase-Client
+- `artifacts/portal-next/src/server/` — Server-only: supabase.ts, uploadAuth.ts, objectStorage.ts
+- `artifacts/portal-next/src/*.css` — Stylesheets (8 Dateien)
+- `artifacts/portal-next/public/` — Profilfotos, Icons, Logo
 
 ## Architecture decisions
 
-- Single-page app: all navigation is internal state (`view` state), no page routing needed
-- App works fully without Supabase — falls back to demo data automatically
-- Supabase anon key used client-side (`VITE_SUPABASE_*`); server routes also support it via `process.env.VITE_SUPABASE_*`
-- API routes proxy Supabase mutations so the service role key never reaches the browser
-
-## Product
-
-- Login screen with profile selection and shared access code
-- Dashboard: upcoming events, open tasks, prep checklist
-- Termine (events): filterable calendar with preparation status tracking
-- Aufgaben (tasks): kanban-style board with assignee and priority
-- Vorgänge (cases): political case/issue tracking
-- Ausschüsse: committee membership overview
-- Profile, Fraktion (members), Dokumente, Kalender sync
+- Single-page app: Navigation ist React-State (`view`), kein Router
+- App läuft ohne Supabase: Alle API-Routen fallen auf Demo-Daten zurück
+- `ssr: false` muss in einer Client Component sein (`app/client-home.tsx`)
+- Supabase: Anon Key (browser, RLS), Service Role Key (server only, bypasses RLS)
+- API-Routen proxien Supabase-Mutations — Service Role Key bleibt server-seitig
+- DELETE `/api/records` liest `table`/`id` aus JSON-Body (nicht Query-String)
 
 ## User preferences
 
@@ -51,8 +52,13 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `ssr: false` in Next.js 15 muss in `"use client"` Komponente (`client-home.tsx`)
+- Sitzungskalender 2026 (55 Einträge) ist hardcoded in `app/api/data/route.ts`, wird mit Supabase-Events gemergt
+- CSS-Reihenfolge in `app/layout.tsx` muss erhalten bleiben (8 Dateien)
+- React pinned auf `19.1.0` (exact) wegen Expo-Kompatibilität
 
 ## Pointers
 
+- Vollständige KI-Anleitung: `CLAUDE.md`
+- Supabase-Setup (SQL, RLS, Env-Vars): `README.md` und `CLAUDE.md`
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

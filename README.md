@@ -3,25 +3,27 @@
 Internes Fraktionsportal für die SPD-Stadtratsfraktion Kaiserslautern.  
 Verwaltet Termine, Aufgaben, Vorgänge, Ausschüsse, Profile, Dokumente und Kalender-Sync.
 
+> **Produktions-App**: `artifacts/portal-next/` — Next.js 15, läuft auf Vercel  
+> **Legacy (Replit-only)**: `artifacts/portal/` + `artifacts/api-server/` — Vite + Express, wird abgelöst
+
 ---
 
 ## Überblick
 
-Das Portal besteht aus drei Hauptteilen:
+### Produktions-Stack (Vercel)
 
 | Artifact | Zweck | Pfad |
 |---|---|---|
-| `portal` | React-Web-App (Desktop + Mobil) | `artifacts/portal/` |
-| `api-server` | Express 5 Backend | `artifacts/api-server/` |
-| `portal-mobile` | Expo React Native App | `artifacts/portal-mobile/` |
+| `artifacts/portal-next/` | Next.js 15 App — Web-UI + alle API-Routen | → Vercel |
+| `artifacts/portal-mobile/` | Expo React Native App | → EAS Build |
 
-Gemeinsam genutzte Bibliotheken unter `lib/`:
+### Gemeinsame Bibliotheken (`lib/`)
 
 | Paket | Zweck |
 |---|---|
 | `lib/api-spec` | OpenAPI 3.1 Spec (Quelle der Wahrheit) |
-| `lib/api-zod` | Zod-Schemas (aus OpenAPI generiert, für Server) |
-| `lib/api-client-react` | TanStack Query Hooks (aus OpenAPI generiert, für Frontend) |
+| `lib/api-zod` | Zod-Schemas (aus OpenAPI generiert, nicht manuell editieren) |
+| `lib/api-client-react` | TanStack Query Hooks (aus OpenAPI generiert, nicht manuell editieren) |
 | `lib/db` | PostgreSQL + Drizzle ORM, Schema-Definition |
 | `lib/object-storage-web` | React-Komponenten für Datei-Uploads |
 
@@ -31,19 +33,15 @@ Gemeinsam genutzte Bibliotheken unter `lib/`:
 
 - **Runtime**: Node.js 24, TypeScript 5.9
 - **Paketmanager**: pnpm (Workspaces)
-- **Backend**: Express 5
-- **Datenbank**: PostgreSQL + Drizzle ORM + Drizzle Kit
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **Frontend**: React 19, Vite 7
+- **Frontend + Backend**: Next.js 15 (App Router) — UI und API-Routen in einem Paket
+- **Datenbank**: Supabase (PostgreSQL) — App läuft auch ohne Supabase im Demo-Modus
 - **Mobile**: Expo (React Native)
-- **API-Codegen**: Orval (aus OpenAPI Spec)
-- **Build**: esbuild (CJS-Bundle für API-Server)
-- **Supabase**: Optional — als Datenbank-Proxy (Anon-Key client-seitig, Service-Role-Key server-seitig)
-- **Storage**: Replit Object Storage (GCS-backed, Presigned URLs)
+- **Deployment**: Vercel (Next.js), EAS Build (Expo)
+- **Storage**: Replit Object Storage (GCS-backed, Presigned URLs) — nur in Replit-Umgebung
 
 ---
 
-## Voraussetzungen & Setup
+## Lokale Entwicklung
 
 ### 1. Abhängigkeiten installieren
 
@@ -53,66 +51,266 @@ pnpm install
 
 ### 2. Umgebungsvariablen setzen
 
-Datei `.env` im Root anlegen (oder in Replit als Secrets):
+Datei `.env.local` in `artifacts/portal-next/` anlegen:
 
 ```env
-# Datenbank (Drizzle ORM)
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-
 # Supabase (optional — ohne diese Werte läuft die App im Demo-Modus)
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 # Portal-Zugangscode (optional — ohne diesen Wert: kein Passwortschutz)
 PORTAL_SHARED_CODE=geheim123
 
-# Upload-Authentifizierung (HMAC-Secret für Upload-Tokens)
+# Upload-Authentifizierung (HMAC-Secret für Upload-Tokens, mind. 32 Zeichen)
 PORTAL_UPLOAD_SECRET=random-secret-min-32-chars
 
-# Replit Object Storage Buckets
+# Replit Object Storage (nur in Replit-Umgebung relevant)
 DEFAULT_OBJECT_STORAGE_BUCKET_ID=bucket-id
-PRIVATE_OBJECT_DIR=private/
-PUBLIC_OBJECT_SEARCH_PATHS=public/documents,public/assets
+PRIVATE_OBJECT_DIR=/bucket-id/private
+PUBLIC_OBJECT_SEARCH_PATHS=/bucket-id/public
 ```
 
-> **Demo-Modus**: Fehlen `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, arbeitet die App vollständig mit eingebetteten Demo-Daten (read-only). Kein Absturz, kein Fehler.
+> **Demo-Modus**: Fehlen die Supabase-Variablen, arbeitet die App vollständig mit eingebetteten Demo-Daten (read-only, kein Absturz, kein Fehler). Ideal für lokale Entwicklung ohne DB.
 
-### 3. Datenbank-Schema anwenden
+### 3. Next.js Dev-Server starten
 
 ```bash
-# Schema auf die DB pushen (dev-only, kein Migration-File)
-pnpm --filter @workspace/db run push
-
-# oder Migrations generieren und anwenden:
-pnpm --filter @workspace/db run generate
-pnpm --filter @workspace/db run migrate
+pnpm --filter @workspace/portal-next run dev
 ```
 
-### 4. API-Code neu generieren (nach OpenAPI-Änderungen)
-
-```bash
-pnpm --filter @workspace/api-spec run codegen
-```
-
-Generiert:
-- `lib/api-zod/src/` — Zod-Schemas für den Server
-- `lib/api-client-react/src/` — TanStack Query Hooks für das Frontend
+Öffne [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## Entwicklung starten
+## Deployment (Vercel)
 
-```bash
-# API-Server (Port 5000)
-pnpm --filter @workspace/api-server run dev
+### Vercel-Konfiguration
 
-# Web-Portal
-pnpm --filter @workspace/portal run dev
+`vercel.json` im Repository-Root ist bereits konfiguriert:
 
-# Mobile App (Expo)
-pnpm --filter @workspace/portal-mobile run dev
+```json
+{
+  "buildCommand": "pnpm --filter @workspace/portal-next run build",
+  "outputDirectory": "artifacts/portal-next/.next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs"
+}
 ```
+
+### Umgebungsvariablen in Vercel setzen
+
+In den Vercel-Projekteinstellungen → Environment Variables:
+
+| Variable | Wert | Wo |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | Production, Preview |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` (Anon Key) | Production, Preview |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` (Service Role Key) | Production only |
+| `PORTAL_SHARED_CODE` | Zugangscode für Login | Production, Preview |
+| `PORTAL_UPLOAD_SECRET` | HMAC-Secret (≥32 Zeichen) | Production, Preview |
+
+> **Sicherheitshinweis**: `SUPABASE_SERVICE_ROLE_KEY` ist ein Server-Secret und darf **nie** mit `NEXT_PUBLIC_` Präfix gesetzt werden. Er ist nur in API-Routen (Server-side) verfügbar.
+
+### Supabase-Tabellen anlegen
+
+Bevor das Portal Daten speichern kann, müssen die Tabellen in Supabase angelegt werden. Siehe Abschnitt [Datenbankschema](#datenbankschema) unten.
+
+SQL-Befehle können direkt im Supabase SQL Editor ausgeführt werden.
+
+---
+
+## Supabase Setup (Schritt für Schritt)
+
+### 1. Projekt anlegen
+
+1. [supabase.com](https://supabase.com) → Neues Projekt anlegen
+2. Region: Frankfurt (`eu-central-1`) empfohlen
+3. Passwort sicher speichern
+
+### 2. API-Zugangsdaten abrufen
+
+Supabase Dashboard → Settings → API:
+
+- **Project URL**: `https://xxx.supabase.co`
+- **anon key** (public): Für `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **service_role key** (secret): Für `SUPABASE_SERVICE_ROLE_KEY`
+
+### 3. Tabellen anlegen
+
+Im Supabase SQL Editor folgenden Code ausführen:
+
+```sql
+-- profiles: Portalmitglieder / Login-Profile
+create table profiles (
+  id text primary key,
+  slug text unique not null,
+  full_name text not null,
+  display_name text,
+  role text,
+  board_role text,
+  portal_role text,
+  is_council_member boolean default false,
+  is_staff boolean default false,
+  email text,
+  phone text,
+  committees text[],
+  bio text,
+  permissions text[] default '{}',
+  avatar_initials text,
+  accent text default 'red',
+  sort_order integer default 999,
+  login_enabled boolean default true
+);
+
+-- events: Termine / Sitzungskalender
+create table events (
+  id text primary key,
+  title text not null,
+  starts_at timestamptz not null,
+  ends_at timestamptz,
+  all_day boolean default false,
+  location text,
+  description text,
+  category text,
+  source text,
+  source_uid text,
+  owner text,
+  relevance text default 'offen',
+  status text default 'scheduled',
+  meeting_body text,
+  preparation_status text default 'offen',
+  requires_preparation boolean default false,
+  decision_needed boolean default false,
+  created_at timestamptz default now()
+);
+
+-- tasks: Aufgaben / Arbeitspakete
+create table tasks (
+  id text primary key default gen_random_uuid()::text,
+  title text not null,
+  description text,
+  assignee text,
+  assignees text[] default '{}',
+  status text default 'offen',
+  priority text default 'normal',
+  progress integer default 0,
+  is_work_order boolean default false,
+  visibility text default 'all',
+  visible_to text[] default '{}',
+  due_date date,
+  event_id text,
+  case_id text,
+  completed_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- members: Ratsmitglieder (öffentliche Übersicht)
+create table members (
+  id text primary key,
+  name text not null,
+  role text,
+  committees text[]
+);
+
+-- documents: Hochgeladene Dokumente
+create table documents (
+  id text primary key default gen_random_uuid()::text,
+  title text not null,
+  storage_path text,
+  content_type text,
+  size integer,
+  uploaded_by text,
+  category text,
+  url text,
+  description text,
+  owner text,
+  document_date date,
+  status text default 'freigegeben',
+  kind text,
+  created_at timestamptz default now()
+);
+
+-- committees: Ausschüsse
+create table committees (
+  id text primary key,
+  slug text unique not null,
+  title text not null,
+  short_ref text,
+  source text,
+  notes text
+);
+
+-- committee_memberships: Ausschussmitgliedschaften
+create table committee_memberships (
+  id text primary key,
+  committee_slug text references committees(slug),
+  person_name text not null,
+  role text default 'member',
+  sort_order integer default 999,
+  source_file text
+);
+
+-- cases: Politische Vorgänge
+create table cases (
+  id text primary key default gen_random_uuid()::text,
+  title text not null,
+  description text,
+  status text default 'offen',
+  category text,
+  assignee text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- calendar_sources: Externe ICS-Kalenderquellen
+create table calendar_sources (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  type text default 'ics',
+  url text,
+  owner text,
+  enabled boolean default true,
+  last_synced_at timestamptz,
+  notes text,
+  created_at timestamptz default now()
+);
+
+-- sync_logs: Kalender-Sync-Protokoll
+create table sync_logs (
+  id text primary key default gen_random_uuid()::text,
+  source_id text references calendar_sources(id),
+  status text,
+  message text,
+  events_added integer default 0,
+  events_updated integer default 0,
+  created_at timestamptz default now()
+);
+```
+
+### 4. Row Level Security (RLS)
+
+Das Portal verwendet den **Service Role Key** server-seitig, der RLS umgeht. Für den Anon Key (client-seitig) sollte RLS aktiviert und nur Lesezugriff gewährt werden.
+
+Einfachste Konfiguration — alle Tabellen öffentlich lesbar:
+
+```sql
+-- RLS aktivieren
+alter table profiles enable row level security;
+alter table events enable row level security;
+alter table tasks enable row level security;
+-- ... (für alle Tabellen)
+
+-- Lesezugriff für alle (anon key)
+create policy "public read" on profiles for select using (true);
+create policy "public read" on events for select using (true);
+-- Schreibzugriffe gehen immer über den API-Server mit Service Role Key
+```
+
+### 5. Daten aus Demo-Modus übernehmen
+
+Beim ersten Start im Demo-Modus zeigt die App alle 13 Fraktionsmitglieder, den Sitzungskalender 2026 und alle Ausschüsse. Diese Demo-Daten können als SQL-INSERT in Supabase übernommen werden — bei Bedarf auf Anfrage generieren.
 
 ---
 
@@ -122,193 +320,54 @@ pnpm --filter @workspace/portal-mobile run dev
 # Typecheck aller Pakete
 pnpm run typecheck
 
-# Build aller Pakete (typecheck + bundle)
+# Next.js Build (für Vercel)
+pnpm --filter @workspace/portal-next run build
+
+# Build aller Pakete
 pnpm run build
 ```
 
 ---
 
-## Datenbankschema (Supabase / PostgreSQL)
+## Datenbankschema
 
-Das Schema wird in Supabase verwaltet. Drizzle ORM ist für lokale Migrationen vorbereitet (Schema-Definitionen unter `lib/db/src/schema/`).
+Vollständige Feldliste: siehe `CLAUDE.md` (AI-Kontext) oder den SQL-Block oben.
 
-### Tabellen
+Kurzzusammenfassung:
 
-#### `profiles`
-Portalmitglieder / Login-Profile
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID (z.B. `p-01`) |
-| `slug` | `text` | URL-freundlicher Name (z.B. `patrick-schaefer`) |
-| `full_name` | `text` | Vollständiger Name |
-| `display_name` | `text` | Kurzname für UI |
-| `role` | `text` | Funktionsbezeichnung |
-| `board_role` | `text?` | Vorstandsfunktion |
-| `portal_role` | `text` | Technische Rolle (`fraktionsvorsitz`, `stellvertretung`, `ratsmitglied`, `fraktionssekretariat`) |
-| `is_council_member` | `bool` | Ratsmitglied? |
-| `is_staff` | `bool` | Verwaltungs-/Büromitarbeiter? |
-| `permissions` | `text[]` | Erlaubte Bereiche (`termine`, `aufgaben`, `dokumente`, `kalender`, `profile`, `admin`, `admin-lite`) |
-| `avatar_initials` | `text` | Kürzel für Avatar-Fallback |
-| `accent` | `text` | Farb-Accent (z.B. `red`, `blue`) |
-| `sort_order` | `int` | Reihenfolge in der Profilauswahl |
-| `login_enabled` | `bool` | Account aktiv? |
-| `email` | `text?` | E-Mail |
-| `phone` | `text?` | Telefon |
-| `bio` | `text?` | Kurzbiografie |
-
-#### `events`
-Termine / Sitzungskalender
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `title` | `text` | Terminbezeichnung |
-| `starts_at` | `timestamptz` | Beginn |
-| `ends_at` | `timestamptz?` | Ende |
-| `all_day` | `bool` | Ganztägig? |
-| `location` | `text?` | Ort |
-| `description` | `text?` | Beschreibung |
-| `category` | `text` | Kategorie (`Stadtrat`, `Ausschuss`, `Intern`, etc.) |
-| `source` | `text` | Quelle (`sitzungskalender_2026`, `supabase`, etc.) |
-| `source_uid` | `text?` | Original-UID aus Kalenderquelle |
-| `owner` | `text?` | Zuständigkeit |
-| `relevance` | `text` | Relevanz (`offen`, `relevant`, `erledigt`) |
-| `status` | `text` | Status (`scheduled`, `cancelled`) |
-| `meeting_body` | `text?` | Gremium |
-| `preparation_status` | `text` | Vorbereitung (`offen`, `in-bearbeitung`, `erledigt`) |
-| `requires_preparation` | `bool` | Vorbereitung nötig? |
-| `decision_needed` | `bool` | Beschluss erforderlich? |
-
-#### `tasks`
-Aufgaben / Arbeitspakete
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `title` | `text` | Aufgabentitel |
-| `description` | `text?` | Beschreibung (enthält Marker: `[progress:N]`, `[assignees:slug,slug]`, `[visible:private:slug]`, `[Patrick→Luca]`) |
-| `assignee` | `text?` | Primär-Assignee (Slug) |
-| `assignees` | `text[]` | Alle Assignees (Slugs) |
-| `status` | `text` | `offen`, `in-bearbeitung`, `erledigt`, `verworfen` |
-| `priority` | `text` | `niedrig`, `mittel`, `hoch`, `dringend` |
-| `progress` | `int` | Fortschritt 0–100 |
-| `is_work_order` | `bool` | Arbeitsauftrag Patrick→Luca? |
-| `visibility` | `text` | `all`, `private` |
-| `visible_to` | `text[]` | Slugs, die private Aufgabe sehen dürfen |
-| `due_date` | `date?` | Fälligkeitsdatum |
-
-> **Beschreibungs-Marker**: Die `description`-Spalte enthält kodierte Metadaten als Inline-Marker (Legacy-Format für Supabase-Kompatibilität). Der API-Server normalisiert diese beim Schreiben/Lesen automatisch.
-
-#### `members`
-Stadtratsmitglieder (öffentliche Fraktion-Übersicht)
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `name` | `text` | Vollständiger Name |
-| `role` | `text` | Funktion |
-| `committees` | `text[]` | Ausschuss-Zugehörigkeiten |
-
-#### `documents`
-Dokumente / Dateien
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `title` | `text` | Dokumentname |
-| `storage_path` | `text` | Pfad im Object Storage |
-| `content_type` | `text` | MIME-Typ |
-| `size` | `int` | Dateigröße in Bytes |
-| `uploaded_by` | `text` | Profil-Slug des Uploaders |
-| `created_at` | `timestamptz` | Upload-Zeitpunkt |
-| `category` | `text?` | Dokumentkategorie |
-
-#### `committees` / `committee_memberships`
-Ausschüsse und Mitgliedschaften
-
-| Tabelle | Spalten |
+| Tabelle | Zweck |
 |---|---|
-| `committees` | `id`, `name`, `short_name`, `category` |
-| `committee_memberships` | `id`, `profile_id`, `committee_id`, `role` (`mitglied`/`stellvertreter`) |
-
-#### `cases`
-Politische Vorgänge / Issues
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `title` | `text` | Vorgangstitel |
-| `description` | `text?` | Beschreibung |
-| `status` | `text` | Status |
-| `category` | `text?` | Kategorie |
-| `assignee` | `text?` | Zuständig (Slug) |
-
-#### `calendar_sources`
-Externe ICS-Kalenderquellen für automatischen Sync
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `id` | `text` | Eindeutige ID |
-| `name` | `text` | Anzeigename |
-| `url` | `text` | ICS-URL |
-| `active` | `bool` | Aktiv? |
-| `last_synced_at` | `timestamptz?` | Letzter Sync |
+| `profiles` | Portalmitglieder, Login-Accounts, Berechtigungen |
+| `events` | Termine, Sitzungskalender, Vorbereitungsstatus |
+| `tasks` | Aufgaben, Arbeitspakete, Arbeitsaufträge |
+| `members` | Ratsmitglieder (öffentliche Fraktionsliste) |
+| `documents` | Hochgeladene Dokumente |
+| `committees` | Ausschüsse |
+| `committee_memberships` | Ausschussmitgliedschaften (ordentlich/stellvertretend) |
+| `cases` | Politische Vorgänge |
+| `calendar_sources` | Externe ICS-Kalenderquellen |
+| `sync_logs` | Kalender-Sync-Protokoll |
 
 ---
 
-## API-Routen
+## API-Routen (Next.js)
 
-Basis-URL: `/api`
+Alle Routen unter `artifacts/portal-next/app/api/`:
 
 | Methode | Pfad | Beschreibung |
 |---|---|---|
-| `GET` | `/healthz` | Health Check |
-| `GET` | `/auth/profiles` | Liste der Login-Profile |
-| `POST` | `/auth/session` | Login mit Profil + Zugangscode |
-| `GET` | `/data` | Alle Portal-Daten aggregiert (Events, Tasks, Members, Docs, …) |
-| `POST` | `/records` | Neuen Datensatz anlegen |
-| `PATCH` | `/records` | Datensatz aktualisieren |
-| `DELETE` | `/records` | Datensatz löschen |
-| `PATCH` | `/work-orders` | Arbeitsauftrag-Status + Fortschritt aktualisieren |
-| `GET` | `/ics` | Dynamischer ICS-Kalender-Feed |
-| `POST` | `/storage/uploads/request-url` | Presigned Upload-URL generieren |
-| `GET` | `/storage/public-objects/:path` | Öffentliche Datei aus Storage abrufen |
-| `GET` | `/storage/objects/:path` | Private Datei aus Storage abrufen |
-
-### `/records` — erlaubte Tabellen
-
-`events`, `tasks`, `members`, `documents`, `calendar_sources`, `profiles`, `cases`, `committees`, `committee_memberships`
-
-### Upload-Authentifizierung
-
-Upload-Tokens werden bei `/auth/session` ausgestellt (HMAC-signiert mit `PORTAL_UPLOAD_SECRET`).  
-Upload-berechtigt sind nur bestimmte Profil-Slugs (hardcoded in `lib/uploadAuth.ts`).  
-Erlaubte MIME-Typen: PDF, Word (`.doc`/`.docx`), Excel (`.xls`/`.xlsx`). Max. 20 MB.
-
----
-
-## Architektur-Entscheidungen
-
-### Demo-Modus (Offline-First)
-Die App funktioniert vollständig ohne Supabase/Datenbank. Alle Routen fallen auf eingebettete Demo-Daten zurück. Das ist kein Fehlerfall, sondern Feature für lokale Entwicklung und Präsentationen.
-
-### Single-Page-App
-`artifacts/portal/src/pages/home.tsx` enthält alle Views. Navigation erfolgt über React-State (`view`), kein Router.
-
-### Anon-Key vs. Service-Role-Key
-- **Anon-Key** (`VITE_SUPABASE_ANON_KEY`): Client-seitig (Browser) — nur Lesezugriff auf erlaubte Tabellen via Row Level Security.
-- **Service-Role-Key** (`SUPABASE_SERVICE_ROLE_KEY`): Server-seitig (API-Server) — voller Zugriff, umgeht RLS für Schreiboperationen.
-
-### API-Codegen-Workflow
-1. OpenAPI Spec ändern: `lib/api-spec/openapi.yaml`
-2. Codegen ausführen: `pnpm --filter @workspace/api-spec run codegen`
-3. Generierte Dateien in `lib/api-zod/` und `lib/api-client-react/` werden committed
-
-### Drizzle vs. Supabase
-Drizzle ORM ist für lokale Datenbankmigrationen und TypeScript-Typen zuständig.  
-Supabase ist der Produktions-Datenbankhost mit eigenem Auth-Layer.  
-Beide Schichten sind entkoppelt — Drizzle schreibt nie direkt in Supabase, das läuft über den API-Server.
+| `GET` | `/api/healthz` | Health Check |
+| `GET` | `/api/auth/profiles` | Login-Profile laden |
+| `POST` | `/api/auth/session` | Login: Profil + Zugangscode validieren, Token ausstellen |
+| `GET` | `/api/data` | Alle Portal-Daten aggregiert (Events, Tasks, Members, …) |
+| `POST` | `/api/records` | Datensatz anlegen |
+| `PATCH` | `/api/records` | Datensatz aktualisieren |
+| `DELETE` | `/api/records` | Datensatz löschen |
+| `PATCH` | `/api/work-orders` | Arbeitsauftrag-Status/Fortschritt aktualisieren |
+| `GET` | `/api/ics` | ICS-Kalender-Feed |
+| `POST` | `/api/storage/uploads/request-url` | Presigned Upload-URL |
+| `GET` | `/api/storage/public-objects/[...path]` | Öffentliche Datei aus Storage |
+| `GET` | `/api/storage/objects/[...path]` | Private Datei aus Storage |
 
 ---
 
@@ -317,44 +376,35 @@ Beide Schichten sind entkoppelt — Drizzle schreibt nie direkt in Supabase, das
 ```
 /
 ├── artifacts/
-│   ├── api-server/           # Express 5 Backend
+│   ├── portal-next/              # PRIMÄR — Next.js 15, Vercel-Deployment
+│   │   ├── app/
+│   │   │   ├── layout.tsx        # Root Layout (CSS-Importe)
+│   │   │   ├── page.tsx          # Einstiegspunkt → client-home.tsx
+│   │   │   ├── client-home.tsx   # Client Component mit ssr:false dynamic import
+│   │   │   └── api/              # API-Routen (Next.js Route Handlers)
 │   │   └── src/
-│   │       ├── routes/       # API-Routen (portal-auth, portal-data, portal-records, …)
-│   │       └── lib/          # supabase.ts, uploadAuth.ts, objectStorage.ts
-│   ├── portal/               # Vite + React Web-App
-│   │   └── src/
-│   │       ├── pages/home.tsx       # Haupt-SPA (alle Views)
-│   │       ├── lib/                 # Types, Demo-Daten, Supabase-Client
-│   │       ├── components/          # UI-Komponenten
-│   │       ├── hooks/               # React Hooks
-│   │       ├── globals.css          # Haupt-Stylesheet
-│   │       ├── interface-polish.css # UI-Detailverfeinerungen
-│   │       ├── mobile-monday.css    # Mobile-spezifische Styles
-│   │       └── visual-tuning.css    # Visuelle Feinabstimmung
-│   └── portal-mobile/        # Expo React Native App
+│   │       ├── pages/home.tsx    # Haupt-SPA (alle Views, "use client")
+│   │       ├── lib/              # Types, Demo-Daten, Supabase-Client (browser)
+│   │       ├── server/           # Server-only: supabase.ts, uploadAuth.ts, objectStorage.ts
+│   │       └── *.css             # Stylesheets (globals, mobile, polish, …)
+│   ├── portal/                   # Legacy Vite+React (Replit-only)
+│   ├── api-server/               # Legacy Express 5 (Replit-only)
+│   └── portal-mobile/            # Expo React Native App
 │
 ├── lib/
-│   ├── api-spec/             # OpenAPI 3.1 Spec (openapi.yaml)
-│   ├── api-zod/              # Generierte Zod-Schemas (Server-Validation)
-│   ├── api-client-react/     # Generierte TanStack Query Hooks
-│   ├── db/                   # Drizzle ORM: Schema, Migrationen, DB-Client
-│   └── object-storage-web/   # Upload-Komponenten für Browser
+│   ├── api-spec/                 # OpenAPI 3.1 Spec
+│   ├── api-zod/                  # Generierte Zod-Schemas
+│   ├── api-client-react/         # Generierte TanStack Query Hooks
+│   ├── db/                       # Drizzle ORM Schema + Migrationen
+│   └── object-storage-web/       # Upload-Komponenten
 │
-├── pnpm-workspace.yaml       # Workspace-Konfiguration
-├── tsconfig.base.json        # Basis-TypeScript-Konfiguration
-└── package.json              # Root-Scripts (build, typecheck)
+├── vercel.json                   # Vercel-Deployment-Konfiguration
+├── pnpm-workspace.yaml           # Workspace-Konfiguration
+└── tsconfig.base.json            # Basis TypeScript-Konfiguration
 ```
 
 ---
 
-## Mobile Breakpoints
-
-- Desktop: `> 860px`
-- Mobil: `≤ 860px` (`@media (max-width: 860px)` in `globals.css`)
-- Safe Area Insets für iOS: `env(safe-area-inset-bottom)` im Tab-Bar und Sheet-Komponenten
-
----
-
-## Lizenzen
+## Lizenz
 
 Privates internes Tool — nicht für öffentliche Nutzung.
