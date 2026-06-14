@@ -1,0 +1,25 @@
+kind = "mobile"
+previewPath = "/portal-mobile/"
+title = "SPD-Fraktion Portal Mobile"
+version = "1.0.0"
+id = "artifacts/portal-mobile"
+router = "path"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+name = "expo"
+paths = ["/portal-mobile/"]
+localPort = 8099
+
+[services.development]
+run = "pnpm --filter @workspace/portal-mobile run dev"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/portal-mobile", "run", "build"]
+run = ["node", "artifacts/portal-mobile/server/serve.js"]
+
+[services.env]
+PORT = "8099"
