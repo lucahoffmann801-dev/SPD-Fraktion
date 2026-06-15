@@ -129,3 +129,19 @@
     padding-right: 18px;
   }
 }
+
+/* === Personen-Chips: immer inhaltsbreit, kein kuenstliches Dehnen, kein Springen beim Aktivieren === */
+.person-filters .person-chip-row { align-items: flex-start; }
+.person-filters .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  flex-grow: 0;
+  align-self: flex-start;
+}
+.person-card .person-committees .committee-pill {
+  flex-grow: 0;
+  align-self: flex-start;
+  width: auto;
+}
