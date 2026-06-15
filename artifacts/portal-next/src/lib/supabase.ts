@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { demoData } from "./demo-data";
 import type { CommitteeMembership, CrudTable, FraktionCase, FraktionCommittee, FraktionProfile, PortalData } from "./types";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
 const serviceRoleKey = undefined; // service role key is only used server-side
 
 export const supabaseConfigured = Boolean(url && anonKey);
