@@ -46,7 +46,7 @@ Package names follow `@workspace/<name>` convention.
 | `artifacts/portal-next/app/layout.tsx` | Root layout — imports all 8 CSS files in order |
 | `artifacts/portal-next/app/page.tsx` | Entry page — imports `ClientHome` (Server Component) |
 | `artifacts/portal-next/app/client-home.tsx` | **"use client"** wrapper with `dynamic(..., { ssr: false })` |
-| `artifacts/portal-next/src/pages/home.tsx` | **Entire portal SPA** — all views, all UI logic, all state (`"use client"`) |
+| `artifacts/portal-next/src/views/home.tsx` | **Entire portal SPA** — all views, all UI logic, all state (`"use client"`) |
 | `artifacts/portal-next/app/api/data/route.ts` | `GET /api/data` — aggregates all portal data, contains full demo data |
 | `artifacts/portal-next/app/api/auth/profiles/route.ts` | `GET /api/auth/profiles` — login profile list |
 | `artifacts/portal-next/app/api/auth/session/route.ts` | `POST /api/auth/session` — login, token issuance |
@@ -86,7 +86,7 @@ All 8 are imported in `app/layout.tsx` in this exact order. Preserve the order.
 
 ### 1. Single-page app, no router
 
-`src/pages/home.tsx` is the entire portal UI. Navigation is a React `useState` called `view`. There is no React Router, no Wouter routing. Do not add page routing.
+`src/views/home.tsx` is the entire portal UI. Navigation is a React `useState` called `view`. There is no React Router, no Wouter routing. Do not add page routing.
 
 ### 2. Demo-mode fallback (always present)
 
@@ -100,7 +100,7 @@ The app works fully without Supabase. Every API route checks `if (!supabase) ret
 // app/client-home.tsx — "use client" wrapper
 "use client";
 import dynamic from "next/dynamic";
-const Home = dynamic(() => import("@/pages/home"), { ssr: false });
+const Home = dynamic(() => import("@/views/home"), { ssr: false });
 export default function ClientHome() { return <Home />; }
 
 // app/page.tsx — Server Component, just imports the wrapper

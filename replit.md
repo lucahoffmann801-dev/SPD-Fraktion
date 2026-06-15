@@ -31,7 +31,7 @@ pnpm --filter @workspace/api-spec run codegen  # nach OpenAPI-Änderungen
 ## Where things live
 
 - `artifacts/portal-next/app/` — Next.js App Router (layouts, pages, API routes)
-- `artifacts/portal-next/src/pages/home.tsx` — Haupt-SPA (alle Views, "use client")
+- `artifacts/portal-next/src/views/home.tsx` — Haupt-SPA (alle Views, "use client")
 - `artifacts/portal-next/src/lib/` — Browser-Typen, Demo-Daten, Supabase-Client
 - `artifacts/portal-next/src/server/` — Server-only: supabase.ts, uploadAuth.ts, objectStorage.ts
 - `artifacts/portal-next/src/*.css` — Stylesheets (8 Dateien)
