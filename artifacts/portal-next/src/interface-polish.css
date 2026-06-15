@@ -145,3 +145,20 @@
   align-self: flex-start;
   width: auto;
 }
+
+/* === Personenkarten: Grid-Equal-Height-Kaskade stoppen, damit Chips nicht vertikal gestreckt werden === */
+.profile-grid { align-items: start; }
+.profile-card { align-content: start; }
+.profile-card .badges,
+.profile-card .permission-row,
+.person-card .person-committees {
+  align-items: flex-start;
+  align-content: flex-start;
+}
+.profile-card .badge,
+.profile-card .permission-row span,
+.person-card .committee-pill {
+  align-self: flex-start;
+  min-height: 0;
+  height: auto;
+}
