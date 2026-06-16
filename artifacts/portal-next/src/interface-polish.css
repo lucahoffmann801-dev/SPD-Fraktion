@@ -172,3 +172,57 @@
 .sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9998; background: linear-gradient(90deg, transparent, #1045a8, transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: sync-slide 1.05s linear infinite; }
 @keyframes sync-slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 button[data-busy] { opacity: .6; cursor: progress; }
+
+/* ============================================================
+   Mobile-Bug-Fixes (Bottom-Bar, Formular-Overflow, Filter)
+   ============================================================ */
+
+@media (max-width: 860px) {
+
+  /* --- 1. Bottom-Bar: etwas grösser, Icons weiter oben ---
+     Statt env(safe-area-inset-bottom) als blanken bottom-padding
+     nutzen wir ihn nur als Sicherheitsabstand unter den Buttons.
+     Die Buttons selbst sitzen mit padding-top bündig oben in der Bar. */
+  .tabbar {
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom);
+    align-items: flex-start;
+  }
+  .tabbar button {
+    min-height: 58px;
+    justify-content: flex-start;
+    padding-top: 10px;
+    padding-bottom: 4px;
+  }
+
+  /* --- 2. Formular-Felder: Datum + Uhrzeit auf Mobile untereinander ---
+     .form-grid wechselt auf eine einzige Spalte; alle Felder, auch
+     date/time, bekommen volle Breite und können nicht mehr overflowsen. */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .form-grid .wide {
+    grid-column: auto;
+  }
+  .form-grid input[type="date"],
+  .form-grid input[type="time"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* --- 3. Ausschüsse/Gremien-Filter bleibt im Rahmen ---
+     .filter-group und .filter-groups dürfen nicht breiter werden als
+     ihr Elterncontainer; Chips scrollen horizontal innerhalb. */
+  .filter-groups {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .filter-group {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .filter-chips {
+    max-width: 100%;
+  }
+}
