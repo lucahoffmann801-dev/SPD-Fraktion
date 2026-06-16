@@ -3,6 +3,10 @@ import { getSupabase } from "@/server/supabase";
 
 const ALLOWED_TABLES = new Set(["events", "tasks", "members", "documents", "calendar_sources", "profiles", "cases", "committees", "committee_memberships"]);
 
+// Only real columns of public.tasks. Anything else in a payload is dropped so a
+// stray field can never trigger a Postgres "column does not exist" error.
+const TASK_COLUMNS = new Set(["title", "description", "assignee", "due_date", "status", "priority", "event_id", "case_id", "progress", "assignees", "visibility", "visible_to", "retention_days", "completed_at", "is_work_order", "created_by"]);
+
 function validTable(table: unknown): table is string {
   return typeof table === "string" && ALLOWED_TABLES.has(table);
 }
@@ -11,39 +15,58 @@ function splitList(value: string | null | undefined) {
   return (value ?? "").split(",").map((item: string) => item.trim()).filter(Boolean);
 }
 
-function normalizeTaskPayload(payload: Record<string, unknown>) {
-  const next: Record<string, unknown> = { ...payload };
-  const description = typeof next.description === "string" ? next.description : "";
-  const assignee = typeof next.assignee === "string" ? next.assignee : "";
-  const assigneesMarker = description.match(/\[assignees:([^\]]+)\]/i);
-  const privateVisibility = description.match(/\[visible:private:([^\]]+)\]/i);
-  const progressMarker = description.match(/\[progress:(\d{1,3})\]/i);
-  const isWorkOrder = description.includes("[Patrick→Luca]") || description.includes("[Patrick-Luca]") || next.is_work_order === true;
+function clampProgress(value: unknown) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(100, Math.round(number)));
+}
 
-  if (!Array.isArray(next.assignees)) {
-    next.assignees = assigneesMarker ? splitList(assigneesMarker[1]) : splitList(assignee);
-  }
-  if (privateVisibility) {
-    next.visibility = "private";
-    next.visible_to = splitList(privateVisibility[1]);
-  }
-  if (progressMarker && next.progress === undefined) {
-    next.progress = Math.max(0, Math.min(100, Number(progressMarker[1])));
-  }
-  if (isWorkOrder) {
-    next.is_work_order = true;
-    next.visibility = next.visibility ?? "private";
-    next.visible_to = Array.isArray(next.visible_to) && (next.visible_to as unknown[]).length > 0 ? next.visible_to : ["patrick-schaefer", "luca-hoffmann"];
-  }
-  next.description = description
+function stripMarkers(description: string) {
+  return description
     .replace(/\s*\[progress:\d{1,3}\]/gi, "")
     .replace(/\s*\[visible:(all|private:[^\]]+)\]/gi, "")
     .replace(/\s*\[assignees:[^\]]+\]/gi, "")
     .replace(/\s*\[retention:[^\]]+\]/gi, "")
     .replace(/\s*\[completed_at:[^\]]+\]/gi, "")
     .replace(/\s*\[Patrick→Luca\]/g, "")
+    .replace(/\s*\[Luca→Patrick\]/g, "")
     .replace(/\s*\[Patrick-Luca\]/g, "")
     .trim();
+}
+
+// Non-destructive normalisation: only columns that are actually provided (or
+// safely derivable from a provided field) are written. A partial update such as
+// { status } never touches description, assignees, visibility or is_work_order.
+function normalizeTaskPayload(payload: Record<string, unknown>) {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (TASK_COLUMNS.has(key)) next[key] = value;
+  }
+
+  if (typeof next.description === "string") {
+    const description = next.description;
+    const assigneesMarker = description.match(/\[assignees:([^\]]+)\]/i);
+    const privateVisibility = description.match(/\[visible:private:([^\]]+)\]/i);
+    const progressMarker = description.match(/\[progress:(\d{1,3})\]/i);
+    if (assigneesMarker && next.assignees === undefined) next.assignees = splitList(assigneesMarker[1]);
+    if (privateVisibility) { next.visibility = "private"; next.visible_to = splitList(privateVisibility[1]); }
+    if (progressMarker && next.progress === undefined) next.progress = clampProgress(progressMarker[1]);
+    if (description.includes("[Patrick→Luca]") || description.includes("[Luca→Patrick]") || description.includes("[Patrick-Luca]")) {
+      next.is_work_order = true;
+    }
+    next.description = stripMarkers(description);
+  }
+
+  if (next.assignees === undefined && typeof next.assignee === "string" && next.assignee.trim()) {
+    next.assignees = splitList(next.assignee);
+  }
+  if (payload.is_work_order === true) next.is_work_order = true;
+  if (next.is_work_order === true) {
+    if (next.visibility === undefined) next.visibility = "private";
+    if (next.visible_to === undefined) next.visible_to = ["patrick-schaefer", "luca-hoffmann"];
+  }
+  if (next.progress !== undefined) next.progress = clampProgress(next.progress);
+
   return next;
 }
 
@@ -73,7 +96,9 @@ export async function PATCH(request: NextRequest) {
     if (!validTable(table) || typeof id !== "string") return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
     const supabase = getSupabase();
     if (!supabase) return NextResponse.json({ error: "Supabase ist nicht konfiguriert." }, { status: 503 });
-    const { data, error } = await supabase.from(table).update(normalizePayload(table, payload)).eq("id", id).select();
+    const normalized = normalizePayload(table, payload);
+    if (Object.keys(normalized).length === 0) return NextResponse.json({ error: "Keine gültigen Felder zum Aktualisieren." }, { status: 400 });
+    const { data, error } = await supabase.from(table).update(normalized).eq("id", id).select();
     if (error) throw new Error(error.message);
     return NextResponse.json({ ok: true, result: data ?? [] });
   } catch (error) {

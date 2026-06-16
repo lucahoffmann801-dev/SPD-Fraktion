@@ -54,7 +54,7 @@ function clampProgress(value: unknown) { const number = Number(value); if (!Numb
 function canSeeWorkOrders(profile: FraktionProfile | null) { return profile?.slug === "patrick-schaefer" || profile?.slug === "luca-hoffmann"; }
 function canUploadDocuments(profile: FraktionProfile | null) { return canSeeWorkOrders(profile) && (profile?.permissions ?? []).includes("dokumente"); }
 function structuredTask(task: FraktionTask) { return task as StructuredTask; }
-function isPatrickLucaTask(task: FraktionTask) { const t = structuredTask(task); return Boolean(t.is_work_order) || (task.description ?? "").includes("[Patrick→Luca]") || (task.description ?? "").includes("[Patrick-Luca]"); }
+function isPatrickLucaTask(task: FraktionTask) { const t = structuredTask(task); return Boolean(t.is_work_order) || (task.description ?? "").includes("[Patrick→Luca]") || (task.description ?? "").includes("[Luca→Patrick]") || (task.description ?? "").includes("[Patrick-Luca]"); }
 function taskAssignees(task: FraktionTask) { const t = structuredTask(task); if (Array.isArray(t.assignees) && t.assignees.length) return t.assignees; if (task.assignee) return task.assignee.split(",").map(item => item.trim()).filter(Boolean); return []; }
 function assigneeText(task: FraktionTask) { const list = taskAssignees(task); return list.length ? list.join(", ") : task.assignee || "nicht zugewiesen"; }
 function canSeeTask(task: FraktionTask, profile: FraktionProfile | null) { if (!profile) return true; const t = structuredTask(task); if (isPatrickLucaTask(task)) return canSeeWorkOrders(profile); if (t.visibility === "private") return (t.visible_to ?? []).includes(profile.slug); return true; }
@@ -257,12 +257,20 @@ export default function Home() {
     await load();
   }
   async function updateTaskStatus(task: FraktionTask, status: string) {
-    if (isPatrickLucaTask(task)) { await patchWorkOrder(task, { status, progress: status === "erledigt" ? 100 : taskProgress(task) }); await load(); }
+    if (isPatrickLucaTask(task)) {
+      try { await patchRecord("tasks", task.id, { status, progress: status === "erledigt" ? 100 : taskProgress(task), completed_at: status === "erledigt" ? new Date().toISOString() : null }); setMessage("Status aktualisiert."); }
+      catch (err) { setMessage(err instanceof Error ? err.message : "Status konnte nicht geändert werden."); }
+      await load();
+    }
     else if (status === "erledigt") { setRetentionTask(task); }
-    else { await patchRecord("tasks", task.id, { status, completed_at: null }); await load(); }
+    else {
+      try { await patchRecord("tasks", task.id, { status, completed_at: null }); setMessage("Status aktualisiert."); }
+      catch (err) { setMessage(err instanceof Error ? err.message : "Status konnte nicht geändert werden."); }
+      await load();
+    }
   }
   async function updateWorkOrderProgress(task: FraktionTask, progress: number) {
-    await patchWorkOrder(task, { progress: clampProgress(progress) });
+    try { await patchRecord("tasks", task.id, { progress: clampProgress(progress) }); } catch (err) { setMessage(err instanceof Error ? err.message : "Fortschritt konnte nicht gespeichert werden."); }
     await load();
   }
   async function deleteWorkOrder(task: FraktionTask) {
@@ -271,7 +279,7 @@ export default function Home() {
     try { await deleteRecord("tasks", task.id); setMessage("Auftrag gelöscht."); await load(); }
     catch (err) { setMessage(err instanceof Error ? err.message : "Löschen fehlgeschlagen."); }
   }
-  async function handleRetentionChoice(task: FraktionTask, policy: string) { setRetentionTask(null); if (policy === "delete") { await deleteRecord("tasks", task.id); setMessage("Aufgabe gelöscht."); } else if (policy === "archive") { await patchRecord("tasks", task.id, { status: "erledigt", retention_policy: "archive", archived: true, completed_at: new Date().toISOString() }); setMessage("Aufgabe archiviert."); } else { const days = policy === "30days" ? 30 : policy === "60days" ? 60 : null; const deleteAt = days ? new Date(Date.now() + days * 86400000).toISOString() : null; await patchRecord("tasks", task.id, { status: "erledigt", retention_policy: policy, completed_at: new Date().toISOString(), ...(deleteAt ? { delete_after: deleteAt } : {}) }); setMessage(days ? `Aufgabe erledigt – wird in ${days} Tagen gelöscht.` : "Aufgabe als erledigt markiert."); } await load(); }
+  async function handleRetentionChoice(task: FraktionTask, policy: string) { setRetentionTask(null); if (policy === "delete") { await deleteRecord("tasks", task.id); setMessage("Aufgabe gelöscht."); } else if (policy === "archive") { await patchRecord("tasks", task.id, { status: "erledigt", retention_days: null, completed_at: new Date().toISOString() }); setMessage("Aufgabe archiviert."); } else { const days = policy === "30days" ? 30 : policy === "60days" ? 60 : null; await patchRecord("tasks", task.id, { status: "erledigt", retention_days: days, completed_at: new Date().toISOString() }); setMessage(days ? `Aufgabe erledigt – wird in ${days} Tagen gelöscht.` : "Aufgabe als erledigt markiert."); } await load(); }
   async function handleDocumentUpload(file: File, title: string, category: string, date: string | null, caseId: string | null) {
     setUploading(true);
     try {
@@ -398,17 +406,21 @@ function NavSvg({ id }: { id: string }) {
 }
 
 const kanbanCols = [
-  { id: "offen",        label: "Offen",        color: "#9ca3af" },
+  { id: "offen",          label: "Offen",          color: "#9ca3af" },
   { id: "in_bearbeitung", label: "In Bearbeitung", color: "#f59e0b" },
-  { id: "pruefung",     label: "Prüfung",       color: "#3b82f6" },
-  { id: "erledigt",     label: "Erledigt",      color: "#10b981" },
+  { id: "rueckfrage",     label: "Rückfrage",      color: "#a855f7" },
+  { id: "wartend",        label: "Wartet",         color: "#64748b" },
+  { id: "pruefung",       label: "Prüfung",        color: "#3b82f6" },
+  { id: "erledigt",       label: "Erledigt",       color: "#10b981" },
 ];
+const kanbanColIds = new Set(kanbanCols.map(c => c.id));
+function statusColumnId(status: string | null | undefined) { const s = status || "offen"; return kanbanColIds.has(s) ? s : "offen"; }
 const statusColor: Record<string, string> = { offen: "#9ca3af", in_bearbeitung: "#f59e0b", rueckfrage: "#a855f7", wartend: "#64748b", pruefung: "#3b82f6", erledigt: "#10b981", verworfen: "#ef4444" };
 
 function KanbanBoard({ tasks, profile, onStatus, onProgress, onDelete, compact = false }: { tasks: FraktionTask[]; profile: FraktionProfile; onStatus: (task: FraktionTask, status: string) => Promise<void>; onProgress: (task: FraktionTask, progress: number) => Promise<void>; onDelete?: (task: FraktionTask) => void; compact?: boolean }) {
   const visibleTasks = compact ? tasks.filter(t => t.status !== "erledigt").slice(0, 8) : tasks;
   if (!tasks.length) return <p className="muted small">Noch keine Aufträge vorhanden.</p>;
-  return <div className="kanban-board">{kanbanCols.map(col => { const colTasks = visibleTasks.filter(t => (t.status || "offen") === col.id); return <div className="kanban-col" key={col.id}><div className="kanban-col-header" style={{ borderColor: col.color }}><span className="kanban-col-label">{col.label}</span><span className="kanban-col-count">{colTasks.length}</span></div><div className="kanban-col-cards">{colTasks.length === 0 && <div className="kanban-empty">Leer</div>}{colTasks.map(task => <KanbanCard key={task.id} task={task} profile={profile} onStatus={onStatus} onProgress={onProgress} onDelete={onDelete} />)}</div></div>; })}</div>;
+  return <div className="kanban-board">{kanbanCols.map(col => { const colTasks = visibleTasks.filter(t => statusColumnId(t.status) === col.id); return <div className="kanban-col" key={col.id}><div className="kanban-col-header" style={{ borderColor: col.color }}><span className="kanban-col-label">{col.label}</span><span className="kanban-col-count">{colTasks.length}</span></div><div className="kanban-col-cards">{colTasks.length === 0 && <div className="kanban-empty">Leer</div>}{colTasks.map(task => <KanbanCard key={task.id} task={task} profile={profile} onStatus={onStatus} onProgress={onProgress} onDelete={onDelete} />)}</div></div>; })}</div>;
 }
 
 function KanbanCard({ task, onStatus, onDelete }: { task: FraktionTask; profile: FraktionProfile; onStatus: (task: FraktionTask, status: string) => Promise<void>; onProgress: (task: FraktionTask, progress: number) => Promise<void>; onDelete?: (task: FraktionTask) => void }) {

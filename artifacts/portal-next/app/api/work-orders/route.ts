@@ -7,70 +7,39 @@ function clampProgress(value: unknown) {
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
-function cleanDescription(description: string | null | undefined) {
-  return (description ?? "")
-    .replace(/\s*\[progress:\d{1,3}\]/gi, "")
-    .replace(/\s*\[visible:(all|private:[^\]]+)\]/gi, "")
-    .replace(/\s*\[assignees:[^\]]+\]/gi, "")
-    .replace(/\s*\[retention:[^\]]+\]/gi, "")
-    .replace(/\s*\[completed_at:[^\]]+\]/gi, "")
-    .replace(/\s*\[Patrick→Luca\]/g, "")
-    .replace(/\s*\[Patrick-Luca\]/g, "")
-    .trim();
-}
-
+// Robust, id-based partial update for work orders. Updates only status/progress/
+// completed_at by primary key, so description, assignees, visibility and the
+// is_work_order flag are always preserved. A tolerant title+assignee lookup
+// (first match, never crashes on duplicates) remains as a legacy fallback.
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json() as Record<string, unknown>;
-    const title = typeof body["title"] === "string" ? body["title"].trim() : "";
-    const assignee = typeof body["assignee"] === "string" && body["assignee"].trim() ? body["assignee"].trim() : "Luca Hoffmann";
+    let id = typeof body["id"] === "string" ? body["id"] : "";
     const status = typeof body["status"] === "string" ? body["status"] : undefined;
     const progress = clampProgress(body["progress"]);
-
-    if (!title) return NextResponse.json({ error: "Titel fehlt" }, { status: 400 });
 
     const supabase = getSupabase();
     if (!supabase) return NextResponse.json({ ok: true, localOnly: true });
 
-    const existing = await supabase.from("tasks").select("*").eq("title", title).eq("assignee", assignee).maybeSingle();
-    if (existing.error) throw new Error(existing.error.message);
+    if (!id) {
+      const title = typeof body["title"] === "string" ? body["title"].trim() : "";
+      const assignee = typeof body["assignee"] === "string" && body["assignee"].trim() ? body["assignee"].trim() : "Luca Hoffmann";
+      if (!title) return NextResponse.json({ error: "Auftrag nicht identifizierbar" }, { status: 400 });
+      const found = await supabase.from("tasks").select("id").eq("title", title).eq("assignee", assignee).order("created_at", { ascending: true }).limit(1);
+      if (found.error) throw new Error(found.error.message);
+      if (!found.data || found.data.length === 0) return NextResponse.json({ error: "Auftrag nicht gefunden" }, { status: 404 });
+      id = found.data[0].id as string;
+    }
 
-    const base = existing.data ?? { title, description: "", assignee, due_date: null, priority: "normal", event_id: null, case_id: null, status: "offen", progress: 0 };
-
-    const payload: Record<string, unknown> = {
-      assignee,
-      assignees: [assignee],
-      description: cleanDescription(base.description as string),
-      is_work_order: true,
-      visibility: "private",
-      visible_to: ["patrick-schaefer", "luca-hoffmann"],
-    };
-
+    const payload: Record<string, unknown> = {};
     if (status) {
       payload["status"] = status;
-      if (status === "erledigt") payload["completed_at"] = new Date().toISOString();
-      if (status !== "erledigt") payload["completed_at"] = null;
+      payload["completed_at"] = status === "erledigt" ? new Date().toISOString() : null;
     }
     if (progress !== undefined) payload["progress"] = progress;
+    if (Object.keys(payload).length === 0) return NextResponse.json({ error: "Keine Änderung übergeben" }, { status: 400 });
 
-    const result = existing.data
-      ? await supabase.from("tasks").update(payload).eq("id", existing.data.id).select()
-      : await supabase.from("tasks").insert({
-          title: (base as Record<string, unknown>)["title"] ?? title,
-          description: payload["description"],
-          assignee: (base as Record<string, unknown>)["assignee"] ?? assignee,
-          assignees: [assignee],
-          due_date: (base as Record<string, unknown>)["due_date"] ?? null,
-          status: status ?? (base as Record<string, unknown>)["status"] ?? "offen",
-          priority: (base as Record<string, unknown>)["priority"] ?? "normal",
-          progress: progress ?? (base as Record<string, unknown>)["progress"] ?? 0,
-          event_id: (base as Record<string, unknown>)["event_id"] ?? null,
-          case_id: (base as Record<string, unknown>)["case_id"] ?? null,
-          is_work_order: true,
-          visibility: "private",
-          visible_to: ["patrick-schaefer", "luca-hoffmann"],
-        }).select();
-
+    const result = await supabase.from("tasks").update(payload).eq("id", id).select();
     if (result.error) throw new Error(result.error.message);
     return NextResponse.json({ ok: true, result: result.data ?? [] });
   } catch (error) {
