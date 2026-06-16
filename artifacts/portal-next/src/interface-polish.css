@@ -162,3 +162,13 @@
   min-height: 0;
   height: auto;
 }
+
+/* === Feedback-Schicht: Toasts + Ladebalken + Busy-Buttons === */
+.toast { position: fixed; z-index: 9999; right: 18px; bottom: 18px; max-width: min(380px, calc(100vw - 36px)); padding: 12px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; line-height: 1.35; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.20); animation: toast-in .22s ease; }
+.toast-success { background: #1f9d57; }
+.toast-error { background: #c0392b; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 860px) { .toast { right: 12px; left: 12px; bottom: auto; top: 12px; max-width: none; text-align: center; } }
+.sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9998; background: linear-gradient(90deg, transparent, #1045a8, transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: sync-slide 1.05s linear infinite; }
+@keyframes sync-slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+button[data-busy] { opacity: .6; cursor: progress; }
