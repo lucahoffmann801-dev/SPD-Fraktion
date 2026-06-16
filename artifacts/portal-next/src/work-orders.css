@@ -88,3 +88,16 @@
 
 @media (max-width: 1200px) { .kanban-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 860px) { .kanban-board { grid-template-columns: 1fr; gap: 8px; } .kanban-col { border-radius: 14px; } }
+
+/* === Auftrag loeschen (Patrick/Luca) === */
+.kanban-card { position: relative; }
+.kanban-card-title { padding-right: 24px; }
+.kanban-card-delete {
+  position: absolute; top: 8px; right: 8px;
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 7px; background: transparent; cursor: pointer;
+  font-size: 12px; line-height: 1; padding: 0; opacity: .4;
+  transition: opacity .12s ease, background .12s ease;
+}
+.kanban-card-delete:hover { opacity: 1; background: rgba(227,0,15,.12); }
