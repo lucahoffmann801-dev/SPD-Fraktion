@@ -425,12 +425,47 @@ function KanbanBoard({ tasks, profile, onStatus, onProgress, onDelete, compact =
 
 function KanbanCard({ task, onStatus, onDelete }: { task: FraktionTask; profile: FraktionProfile; onStatus: (task: FraktionTask, status: string) => Promise<void>; onProgress: (task: FraktionTask, progress: number) => Promise<void>; onDelete?: (task: FraktionTask) => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const current = task.status || "offen";
   const prog = taskProgress(task);
   const dirMatch = task.description?.match(/^\[(.+?)\]/);
   const dir = dirMatch ? dirMatch[1] : null;
   const progColor = prog < 34 ? "#ef4444" : prog < 67 ? "#f59e0b" : "#22c55e";
-  return <div className="kanban-card">{onDelete && <button type="button" className="kanban-card-delete" title="Auftrag löschen" aria-label="Auftrag löschen" onClick={() => onDelete(task)}>🗑️</button>}<div className="kanban-card-title">{task.title}</div><div className="kanban-card-meta">{dir && <span className="kanban-dir">{dir}</span>}<span className={`kanban-pri ${task.priority || "normal"}`}>{task.priority || "normal"}</span>{task.due_date && <span className="kanban-due">{dateOnly(task.due_date)}</span>}</div>{prog > 0 && <div className="kanban-progress-bar"><div className="kanban-progress-fill" style={{ width: `${prog}%`, background: progColor }} /></div>}<div className="kanban-status-wrap"><button className="kanban-status-btn" style={{ background: statusColor[current] ?? "#9ca3af" }} onClick={() => setMenuOpen(o => !o)}>{taskLabel[current] ?? current} ▾</button>{menuOpen && <div className="kanban-status-menu">{boardStatus.map(s => <button key={s} className="kanban-status-option" style={{ background: statusColor[s] ?? "#9ca3af" }} onClick={() => { onStatus(task, s); setMenuOpen(false); }}>{taskLabel[s] ?? s}</button>)}</div>}</div></div>;
+  const desc = readable(task.description);
+  const st = structuredTask(task);
+  function toggleExpand(e: React.MouseEvent<HTMLDivElement>) {
+    const tgt = e.target as HTMLElement;
+    if (!tgt.closest("button")) setExpanded(o => !o);
+  }
+  const details = expanded ? (
+    <div className="kanban-card-details">
+      {desc && <p className="kanban-detail-desc">{desc}</p>}
+      {task.due_date && <p className="kanban-detail-row"><span className="kanban-detail-label">Frist</span><span>{dateOnly(task.due_date)}</span></p>}
+      {st.created_by && <p className="kanban-detail-row"><span className="kanban-detail-label">Von</span><span>{st.created_by === "patrick-schaefer" ? "Patrick" : st.created_by === "luca-hoffmann" ? "Luca" : st.created_by}</span></p>}
+    </div>
+  ) : null;
+  const statusMenu = menuOpen ? (
+    <div className="kanban-status-menu">
+      {boardStatus.map(s => <button key={s} className="kanban-status-option" style={{ background: statusColor[s] ?? "#9ca3af" }} onClick={() => { onStatus(task, s); setMenuOpen(false); }}>{taskLabel[s] ?? s}</button>)}
+    </div>
+  ) : null;
+  return (
+    <div className={classNames("kanban-card", expanded && "kanban-card-expanded")} onClick={toggleExpand}>
+      {onDelete && <button type="button" className="kanban-card-delete" title="Auftrag löschen" aria-label="Auftrag löschen" onClick={() => onDelete(task)}>🗑️</button>}
+      <div className="kanban-card-title">{task.title}</div>
+      <div className="kanban-card-meta">
+        {dir && <span className="kanban-dir">{dir}</span>}
+        <span className={`kanban-pri ${task.priority || "normal"}`}>{task.priority || "normal"}</span>
+        {task.due_date && <span className="kanban-due">{dateOnly(task.due_date)}</span>}
+      </div>
+      {prog > 0 && <div className="kanban-progress-bar"><div className="kanban-progress-fill" style={{ width: `${prog}%`, background: progColor }} /></div>}
+      {details}
+      <div className="kanban-status-wrap">
+        <button className="kanban-status-btn" style={{ background: statusColor[current] ?? "#9ca3af" }} onClick={() => setMenuOpen(o => !o)}>{taskLabel[current] ?? current} ▾</button>
+        {statusMenu}
+      </div>
+    </div>
+  );
 }
 
 function RetentionDialog({ task, onChoose, onCancel }: { task: FraktionTask; onChoose: (task: FraktionTask, policy: string) => Promise<void>; onCancel: () => void }) {

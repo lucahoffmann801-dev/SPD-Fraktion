@@ -174,50 +174,64 @@
 button[data-busy] { opacity: .6; cursor: progress; }
 
 /* ============================================================
-   Mobile-Bug-Fixes (Bottom-Bar, Formular-Overflow, Filter)
+   Mobile-Bug-Fixes v2 (Bottom-Bar, Formular-Overflow, Filter)
    ============================================================ */
 
 @media (max-width: 860px) {
 
-  /* --- 1. Bottom-Bar: etwas grösser, Icons weiter oben ---
-     Statt env(safe-area-inset-bottom) als blanken bottom-padding
-     nutzen wir ihn nur als Sicherheitsabstand unter den Buttons.
-     Die Buttons selbst sitzen mit padding-top bündig oben in der Bar. */
+  /* --- 1. Bottom-Bar: feste Hoehe, Buttons oben, safe-area nur unten ---
+     Die Bar ist 56px hoch (Icon+Label). Darunter kommt ein leerer Spacer
+     in Hoehe von env(safe-area-inset-bottom) damit der Home-Indicator
+     nicht ueberlappt. Buttons sitzen immer am oberen Rand der Bar. */
   .tabbar {
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding: 0 2px;
     align-items: flex-start;
+    box-sizing: border-box;
   }
   .tabbar button {
-    min-height: 58px;
+    height: 56px;
+    min-height: unset;
+    padding: 8px 2px 4px;
     justify-content: flex-start;
-    padding-top: 10px;
-    padding-bottom: 4px;
+    align-items: center;
+    gap: 2px;
+  }
+  .tabbar button span {
+    width: 26px;
+    height: 26px;
   }
 
-  /* --- 2. Formular-Felder: Datum + Uhrzeit auf Mobile untereinander ---
-     .form-grid wechselt auf eine einzige Spalte; alle Felder, auch
-     date/time, bekommen volle Breite und können nicht mehr overflowsen. */
+  /* --- 2. Formular-Felder: eine Spalte, kein Overflow ---
+     form-grid bleibt ein Grid, aber nur mit einer Spalte.
+     Inputs bekommen max-width:100% + -webkit-appearance:none damit
+     iOS-native date/time-Picker nicht aus dem Container rauslaeuft. */
   .form-grid {
     grid-template-columns: 1fr !important;
   }
   .form-grid .wide {
     grid-column: auto;
   }
-  .form-grid input[type="date"],
-  .form-grid input[type="time"] {
-    width: 100%;
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
+    width: 100%;
   }
-
-  /* --- 3. Ausschüsse/Gremien-Filter bleibt im Rahmen ---
-     .filter-group und .filter-groups dürfen nicht breiter werden als
-     ihr Elterncontainer; Chips scrollen horizontal innerhalb. */
-  .filter-groups {
-    min-width: 0;
+  .form-grid input[type="date"],
+  .form-grid input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  /* Panel selbst clippt Kinder die trotzdem ueberlaufen */
+  .panel {
     overflow: hidden;
   }
+
+  /* --- 3. Ausschuesse/Gremien-Filter: bleibt im Rahmen ---*/
+  .filter-groups,
   .filter-group {
     min-width: 0;
     overflow: hidden;
