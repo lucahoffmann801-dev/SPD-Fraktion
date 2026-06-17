@@ -240,3 +240,116 @@ button[data-busy] { opacity: .6; cursor: progress; }
     max-width: 100%;
   }
 }
+
+/* ============================================================
+   Design Glow-Up v1 — seitenübergreifend
+   ============================================================ */
+
+/* 1. Hintergrund minimal tiefer -> Panels heben sich besser ab */
+body { background: #e8eaee; }
+
+/* 2. Inputs / Selects / Textarea: sichtbarere Border im Ruhezustand,
+      leichter Eigenton damit Felder sich vom Panel abheben */
+.input, .select, .textarea {
+  background: #f9fafb;
+  border-color: #d0d4db;
+}
+.input:focus, .select:focus, .textarea:focus {
+  background: #ffffff;
+  border-color: rgba(227,0,15,.5);
+  box-shadow: 0 0 0 3px rgba(227,0,15,.09);
+}
+
+/* 3. Badges -> Chip-Form statt Pill (weniger blobby) */
+.badge,
+.permission-row span,
+.kanban-pri {
+  border-radius: 6px !important;
+}
+
+/* 4. Panel-Titel: kein Border-Bottom, nur Abstand -> luftiger */
+.panel-title {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 16px;
+}
+.panel-title h2 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+.panel-title p {
+  margin-top: 2px;
+  font-size: .78rem;
+}
+
+/* 5. Stat-Karten: Zahl größer, mehr Luft, Akzentlinie schärfer */
+.stat {
+  padding: 16px 18px;
+}
+.stat .metric {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 4px 0 3px;
+}
+.stat::before {
+  width: 4px;
+  border-radius: 4px;
+}
+
+/* 6. Kanban-Spaltenköpfe: subtiler getönter Hintergrund */
+.kanban-col-head {
+  background: var(--surface-soft);
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+
+/* 7. Tabbar (Mobile): aktiver Tab mit rotem Unterstrich-Akzent
+      statt nur Farbwechsel -> klarer, welche Seite aktiv ist */
+@media (max-width: 860px) {
+  .tabbar {
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(0,0,0,.08);
+    box-shadow: 0 -1px 0 rgba(0,0,0,.06), 0 -6px 24px rgba(15,23,42,.07);
+  }
+  .tabbar button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 2px 2px 0 0;
+    background: var(--red);
+  }
+  .tabbar button {
+    position: relative;
+  }
+  .tabbar button.active span {
+    background: rgba(227,0,15,.10);
+  }
+
+  /* 8. Panel-Titel auf Mobile kompakter */
+  .panel-title h2 {
+    font-size: .97rem;
+  }
+
+  /* 9. Stat-Karten auf Mobile: Zahl etwas kleiner skalieren */
+  .stat .metric {
+    font-size: 1.7rem;
+  }
+
+  /* 10. Formulare: Sektionsüberschrift im Panel stärker abheben */
+  .panel > h2:first-child,
+  .panel > .panel-title:first-child h2 {
+    font-size: 1.1rem;
+    font-weight: 780;
+    letter-spacing: -0.035em;
+  }
+}
